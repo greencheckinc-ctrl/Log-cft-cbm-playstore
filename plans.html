@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plans - Log CFT/CBM Calculator</title>
+<style>
+:root{--bg:#f3f7f4;--ink:#1c2a24;--wood:#1f6b45;--dark:#164f33;--soft:#e4f1ea;--line:#cddbd3;--card:#fff;--muted:#5a6b63;--bad:#b3261e;--warn:#b26a00}
+*{box-sizing:border-box}body{margin:0;font-family:Georgia,"Noto Sans Gujarati",serif;background:var(--bg);color:var(--ink);padding-bottom:40px}
+header{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--wood);color:#fff}
+header a{color:#fff;text-decoration:none;font:600 .9rem system-ui}header h1{font-size:1.05rem;margin:0}
+main{max-width:640px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(16,40,28,.07)}
+.card.cur{border:2px solid var(--wood)}h2{margin:0 0 6px;font-size:1.1rem}
+.price{font-size:1.5rem;font-weight:700;color:var(--dark)}.price small{font-size:.8rem;color:var(--muted);font-weight:400}
+ul{margin:8px 0;padding-left:20px}li{margin:3px 0}.no{color:var(--muted)}
+button.pri{width:100%;padding:11px;border:0;border-radius:10px;background:var(--wood);color:#fff;font:700 .95rem system-ui;margin-top:8px}
+button.alt{width:100%;padding:9px 12px;border:1px solid var(--wood);background:#fff;color:var(--wood);border-radius:10px;font:600 .85rem system-ui;margin-top:8px}
+button:disabled{opacity:.5}
+.tag{display:inline-block;font:700 .7rem system-ui;padding:2px 8px;border-radius:10px;background:var(--soft);color:var(--dark);margin-left:6px}
+.bar{height:16px;background:#e6ece8;border-radius:8px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--wood)}
+.row{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:.92rem}.row:last-child{border:0}
+.msg{padding:9px;border-radius:8px;font:.85rem system-ui;margin:8px 0;background:var(--soft)}.msg.bad{background:#fde8e6;color:var(--bad)}.msg.warn{background:#fff0d6;color:var(--warn)}
+.fine{font:.75rem system-ui;color:var(--muted)}
+</style></head><body>
+<header><a href="./" aria-label="Back to calculator">&larr; Calculator</a><h1>Plans &amp; Subscription</h1></header>
+<main id="v">Loading...</main>
+<script>window.NATIVE=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());window.NOADS=true</script>
+<script src="config.js"></script>
+<script src="billing.js"></script>
+<script src="ads.js"></script>
+<script>
+var C=window.LOGCFT||{}, PRODUCTS=C.products||{prem:'premium_monthly',ai:'ai_yearly'};
+var PLAY_MANAGE='https://play.google.com/store/account/subscriptions';
+var TERMS_URL='terms.html', PRIVACY_URL='privacy.html';
+try{var T={green:['#1f6b45','#164f33','#e4f1ea','#cddbd3','#f3f7f4'],brown:['#7a4a21','#58340f','#f6ead6','#d6c9b3','#f3efe6'],blue:['#1e5aa8','#143f78','#e6eef9','#cbd7e8','#f3f6fb'],teal:['#0f766e','#0a524c','#e0f2f0','#c5dedb','#f1f7f6'],purple:['#5b3cc4','#41299a','#eee9fb','#d8d0f0','#f6f4fc'],slate:['#334155','#1e293b','#e8ecf1','#cfd6df','#f4f5f7']}[localStorage.getItem('logcft_theme_v1')];
+if(T){var r=document.documentElement.style;r.setProperty('--wood',T[0]);r.setProperty('--dark',T[1]);r.setProperty('--soft',T[2]);r.setProperty('--line',T[3]);r.setProperty('--bg',T[4])}}catch(e){}
+var W=(C.workerUrl||'').replace(/\/+$/,'');
+var DEV=(function(){try{return localStorage.getItem('logcft_dev_v1')||''}catch(e){return ''}})();
+var ST=null, note='', busy=false;
+function dt(ms){return new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+async function loadStatus(){
+  if(!W||!DEV) return;
+  try{
+    var r=await fetch(W+'/status?deviceId='+encodeURIComponent(DEV)); var j=await r.json();
+    if(!r.ok) throw new Error(j.error||('Server said '+r.status)); ST=j;
+    try{localStorage.setItem('logcft_prem_until',String(j.premiumUntil||0))}catch(e){}
+  }catch(e){note='Could not load your plan: '+e.message}
+}
+async function buy(sku){
+  if(busy) return; busy=true; note='Waiting for Google Play...'; render();
+  try{ await LogBilling.buy(sku); note='Finishing your purchase...' }
+  catch(e){ note=e.cancelled?'Purchase cancelled.':('Purchase not completed: '+(e.message||e)) }
+  busy=false; render();
+}
+async function restore(){
+  if(busy) return; busy=true; note='Checking your purchases...'; render();
+  try{ var n=await LogBilling.syncOwned(); note=n?('Restored '+n+' purchase'+(n>1?'s':'')+'.'):'No active purchases found for this Google account.' }
+  catch(e){ note='Restore failed: '+(e.message||e) }
+  busy=false; await loadStatus(); render();
+}
+function render(){
+  var h='', prem=ST&&ST.premiumActive, ai=ST&&ST.aiActive, PR=(window.LogBilling&&LogBilling.state.price)||{};
+  if(!window.NATIVE) h+='<div class="msg warn">Purchases work only in the Android app from Google Play. Here you can only see your plan.</div>';
+  else if(!W||!DEV) h+='<div class="msg warn">Plans are not available yet'+(!DEV?' (open this page from the app so it can see your Device ID)':'')+'.</div>';
+  if(note) h+='<div class="msg">'+esc(note)+'</div>';
+  h+='<div class="card'+(!prem&&!ai?' cur':'')+'"><h2>Free'+(!prem&&!ai?'<span class="tag">CURRENT</span>':'')+'</h2><div class="price">&#8377;0</div><ul><li>Log CFT/CBM Calculator, all basic features</li><li>Locally saved records</li><li>Shows ads</li><li class="no">No AI image reading</li></ul></div>';
+  h+='<div class="card'+(prem?' cur':'')+'"><h2>Premium'+(prem?'<span class="tag">ACTIVE</span>':'')+'</h2><div class="price">'+(PR[PRODUCTS.prem]?esc(PR[PRODUCTS.prem]):'&#8377;249')+' <small>/ month</small></div><ul><li>Everything in Free</li><li>No ads while Premium is valid</li><li class="no">Does not include AI reading</li></ul>'+(prem?'<div class="row"><span>Active until</span><b>'+dt(ST.premiumUntil)+'</b></div>':'')+'<button class="pri" '+(busy?'disabled ':'')+'onclick="buy(PRODUCTS.prem)">'+(prem?'Renew Premium':'Choose Premium')+'</button></div>';
+  h+='<div class="card'+(ai?' cur':'')+'"><h2>AI Support'+(ai?'<span class="tag">ACTIVE</span>':'')+'</h2><div class="price">'+(PR[PRODUCTS.ai]?esc(PR[PRODUCTS.ai]):'&#8377;3,999')+' <small>/ year</small></div><ul><li>AI image reading: up to 1,500 per year</li><li>Usage shown below</li><li class="no">Ads stay unless you also have Premium</li></ul>';
+  if(ai){var p=Math.round(ST.used/ST.limit*100);h+='<div class="row"><span>Active until</span><b>'+dt(ST.aiUntil)+'</b></div><div class="row"><span>Readings used</span><b>'+ST.used+' / '+ST.limit+'</b></div><div class="bar" role="progressbar" aria-valuenow="'+p+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+p+'%"></i></div>'+(p>=100?'<div class="msg bad">All '+ST.limit+' readings used. AI reading is paused until you renew on '+dt(ST.aiUntil)+'.</div>':p>=90?'<div class="msg warn">90% used. Only '+ST.left+' readings left.</div>':p>=80?'<div class="msg warn">80% used. '+ST.left+' readings left.</div>':'');}
+  h+='<button class="pri" '+(busy?'disabled ':'')+'onclick="buy(PRODUCTS.ai)">'+(ai?'Renew AI Support':'Choose AI Support')+'</button></div>';
+  h+='<button class="alt" '+(busy?'disabled ':'')+'onclick="restore()">Restore purchases</button><a class="alt" style="display:block;text-align:center;text-decoration:none;padding:10px;border:1px solid var(--wood);border-radius:10px;margin-top:8px;color:var(--wood);font:600 .85rem system-ui" href="'+PLAY_MANAGE+'" target="_blank" rel="noopener">Manage subscription in Google Play</a>';
+  h+='<p class="fine">Subscriptions renew automatically until cancelled in Google Play. Premium and AI Support are separate. Your plan belongs to this device (ID '+esc(DEV||'-')+'). <a href="'+TERMS_URL+'">Terms</a> &middot; <a href="'+PRIVACY_URL+'">Privacy Policy</a></p>';
+  document.getElementById('v').innerHTML=h;
+}
+render();
+if(window.LogBilling){ LogBilling.state.onChange=function(m){note=m;loadStatus().then(render)}; }
+Promise.resolve(window.LogBilling?LogBilling.init():0).then(function(){ if(window.LogBilling&&LogBilling.state.err&&window.NATIVE) note=LogBilling.state.err; return window.LogBilling?LogBilling.syncOwned():0 }).then(loadStatus).then(render);
+</script></body></html>
