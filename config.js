@@ -11,5 +11,5 @@ window.LOGCFT = {
   firebaseApiKey: 'AIzaSyC_6GxQsqvOv4KhUx8rD3Ept7zvSKzv9oA',
   // Optional "Continue with Google" button. Firebase > Authentication > Sign-in method > Google > Web SDK configuration > Web client ID.
   // Leave as is to hide the Google button.
-  googleWebClientId: '847192787553-8v83hpdfumohfbura2knlpva6uq9uvc1.apps.googleusercontent.com'
+  googleWebClientId: '879555635458-somhlskr2428iunm6avtcfpds1s4p2pf.apps.googleusercontent.com'
 };
