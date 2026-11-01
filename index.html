@@ -2200,6 +2200,22 @@ phRestore(getCurrent());
 (function(){
   let last=0, armed=false;
   const toast=t=>{let e=document.getElementById('bk-toast'); if(!e){e=document.createElement('div');e.id='bk-toast';e.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;font-size:.9rem;z-index:99999;opacity:0;transition:opacity .2s;pointer-events:none';document.body.appendChild(e)} e.textContent=t;e.style.opacity='1';clearTimeout(e._t);e._t=setTimeout(()=>{e.style.opacity='0'},2200)};
+  // Android app: handle the hardware back button natively (no history tricks)
+  if(window.NATIVE){
+    const AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
+    if(AP&&AP.addListener){
+      AP.addListener('backButton',()=>{
+        const dlg=[...document.querySelectorAll('dialog[open]')].pop();
+        if(dlg){ try{dlg.close()}catch(e){} return }
+        const kpEl=document.getElementById('kp');
+        if(kpEl&&!kpEl.hidden){ const hb=document.getElementById('kp-hide'); if(hb) hb.dispatchEvent(new Event('pointerdown',{cancelable:true})); try{document.activeElement&&document.activeElement.blur()}catch(e){} return }
+        const now=Date.now();
+        if(now-last<2500){ try{AP.exitApp()}catch(e){} return }
+        last=now; toast('Your work is saved. Press back again to exit');
+      });
+      return;
+    }
+  }
   const arm=()=>{ if(armed) return; armed=true; try{history.pushState({lc:1},'')}catch(e){} };
   const rearm=()=>{ arm(); if(!armed) return; };
   document.addEventListener('pointerdown',arm,{once:true});

@@ -72,6 +72,7 @@ function render(){
   h+='<p class="fine">Subscriptions renew automatically until cancelled in Google Play. Premium and AI Support are separate. Your plan belongs to this device (ID '+esc(DEV||'-')+'). <a href="'+TERMS_URL+'">Terms</a> &middot; <a href="'+PRIVACY_URL+'">Privacy Policy</a></p>';
   document.getElementById('v').innerHTML=h;
 }
+try{ var AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App; if(window.NATIVE&&AP&&AP.addListener) AP.addListener('backButton',function(){ location.href='./' }) }catch(e){}
 render();
 if(window.LogBilling){ LogBilling.state.onChange=function(m){note=m;loadStatus().then(render)}; }
 Promise.resolve(window.LogBilling?LogBilling.init():0).then(function(){ if(window.LogBilling&&LogBilling.state.err&&window.NATIVE) note=LogBilling.state.err; return window.LogBilling?LogBilling.syncOwned():0 }).then(loadStatus).then(render);
