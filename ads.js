@@ -34,6 +34,35 @@
       hid = true; pad(false);
     } catch (e) {} finally { busy = false; }
   }
+  // Interstitial: shown once when the person taps Print, then the preview opens (Free plan only, at most once a minute)
+  var intReady = false, intLoading = false, lastInt = 0, INT_GAP = 60000;
+  async function prepInt() {
+    var p = plug(); if (!p || !A.interstitialId || intReady || intLoading || window.NOADS || premiumNow()) return;
+    intLoading = true;
+    try {
+      if (!(await init())) return;
+      await p.prepareInterstitial({ adId: A.interstitialId, isTesting: !!A.testing });
+      intReady = true;
+    } catch (e) {} finally { intLoading = false; }
+  }
+  function showInterstitial() {
+    return new Promise(function (resolve) {
+      var p = plug();
+      if (!p || window.NOADS || premiumNow() || !intReady || Date.now() - lastInt < INT_GAP) { prepInt(); return resolve(false); }
+      var done = false, hs = [], timer = null;
+      function fin(ok) {
+        if (done) return; done = true; clearTimeout(timer);
+        hs.forEach(function (h) { try { h.remove(); } catch (e) {} });
+        intReady = false; if (ok) lastInt = Date.now();
+        setTimeout(prepInt, 800); resolve(ok);
+      }
+      ['interstitialAdDismissed', 'interstitialAdFailedToShow'].forEach(function (ev, i) {
+        try { Promise.resolve(p.addListener(ev, function () { fin(i === 0); })).then(function (h) { hs.push(h); }); } catch (e) {}
+      });
+      timer = setTimeout(function () { fin(false); }, 30000);
+      Promise.resolve(p.showInterstitial()).catch(function () { fin(false); });
+    });
+  }
   // decide what to do now
   function update() {
     try { var b = document.getElementById('daysbadge'); if (b && window.updateDaysBadge) updateDaysBadge(); } catch (e) {}
@@ -50,12 +79,12 @@
         if (r.ok) { var j = await r.json(); localStorage.setItem(PREMKEY, String(j.premiumUntil || 0)); }
       } catch (e) {}
     }
-    update();
+    update(); prepInt();
   }
   window.LogAds = {
     isPremium: premiumNow,
     planText: function () { return premiumNow() ? '✓ Premium' : 'Free (ads)'; },
-    refresh: refreshStatus, update: update
+    refresh: refreshStatus, update: update, interstitial: showInterstitial
   };
   // react to dialogs and keypad opening / closing
   try {
@@ -65,7 +94,7 @@
   document.addEventListener('visibilitychange', function () { if (!document.hidden) refreshStatus(); });
   // sync purchases from Google Play quietly (renewals), then update ads
   function start() {
-    update();
+    update(); prepInt();
     if (window.LogBilling) { LogBilling.syncOwned().then(refreshStatus, refreshStatus); } else { refreshStatus(); }
   }
   if (document.readyState === 'complete') setTimeout(start, 500); else window.addEventListener('load', function () { setTimeout(start, 500); });

@@ -185,6 +185,18 @@ dialog .ft{background:#fafafa}
 .swatches button{display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;color:var(--ink);border:2px solid var(--line);padding:10px 6px;font-size:.85rem;box-shadow:none}
 .swatches button i{display:block;width:34px;height:34px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
 .swatches button.sel{border-color:var(--wood);background:var(--soft)}
+#rsbox{display:none}body.round #rsbox{display:block !important}
+#swbox{display:block}body.round #swbox,body.fix #swbox{display:none !important}
+body.round .etbl{table-layout:fixed}
+body.round .etbl th:nth-child(1),body.round .etbl td:nth-child(1){width:24px;text-align:center;padding-left:2px;padding-right:2px}
+body.round .etbl th:nth-child(3),body.round .etbl td:nth-child(3){width:54px;text-align:right}
+body.round .etbl th:nth-child(4),body.round .etbl td:nth-child(4){width:46px;text-align:right}
+body.round .etbl th:nth-child(5),body.round .etbl td:nth-child(5){width:64px}
+body.round .etbl th:nth-child(2){font-size:.68rem;line-height:1.15;white-space:normal;text-transform:none;letter-spacing:0}
+body.round .etbl #rows td:nth-child(2) input{width:100% !important;max-width:none !important;box-sizing:border-box;min-width:0;min-height:50px;font-size:1.15rem;padding:6px 10px}
+body.round .etbl td:nth-child(2){padding-right:6px}
+body.round .etbl td.num{white-space:nowrap}
+body.round .etbl td.act{padding-left:0;padding-right:0}
 .th2,.cft2{display:none}
 body.round .th2,body.round .cft2{display:table-cell}
 .seg{display:flex;gap:0;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px;margin:0 0 12px}
@@ -221,7 +233,7 @@ body.round .th2,body.round .cft2{display:table-cell}
   .sheet table th{white-space:normal;font-size:10.5px;line-height:1.1;padding:0 1mm;text-align:center;overflow:hidden}
   .sheet .tot{font-size:14px;padding:2mm}
   .sheet .grand{font-size:16px;margin-top:3mm}
-  body>*:not(#sheet){display:none!important}
+  body>*:not(#sheet):not(#print-promo){display:none!important}
   #sheet{display:block!important}
   body{background:#fff;padding:0;max-width:none}
 }
@@ -289,6 +301,9 @@ body.fix > .box{display:none}
 #pv-sheet .fxpage{margin-bottom:8mm;border-bottom:1px dashed #bbb}
 #pv-sheet .fxpage:last-child{margin-bottom:0;border-bottom:0}
 
+#print-promo{display:none}
+#pv-promo{margin-top:6mm;padding-top:2mm;border-top:1px solid #ccc;text-align:center;font:11px Arial,Helvetica,sans-serif;color:#555}
+@media print{body.free-print #print-promo{display:block;position:fixed;left:0;right:0;bottom:0;text-align:center;font:9px Arial,Helvetica,sans-serif;color:#555;border-top:1px solid #ccc;padding-top:1mm;background:#fff}}
 /* Print preview */
 #dlg-preview{width:96vw;max-width:900px}
 #dlg-preview .bd{background:#e3e6e4;padding:10px;max-height:72vh;overflow:auto}
@@ -446,7 +461,7 @@ html.locked body{overflow:hidden}
 #bpv-page .b-pg{margin-bottom:5mm;box-shadow:0 0 0 1px #bbb}
 #bpv-page .b-pg:last-child{margin-bottom:0}
 @media print{
-  body>*:not(#sheet){display:none!important}
+  body>*:not(#sheet):not(#print-promo){display:none!important}
   #sheet .bill{width:194mm}
 }
 </style>
@@ -552,6 +567,74 @@ html.locked body{overflow:hidden}
 
 <div class="statusbar" style="display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;margin:10px 0 10px"><span style="flex:1;min-width:0;overflow-wrap:anywhere">File: <strong id="curname"></strong><span id="fmsg" role="status"></span></span><button type="button" class="alt" id="sb-save" style="flex:none;padding:4px 18px;font-size:.85rem;min-height:0;margin:0">Save</button></div>
 <div class="seg" role="group" aria-label="Sheet type"><button type="button" id="mode-sawn" aria-pressed="true">Sawn timber<small>Size &rarr; CFT</small></button><button type="button" id="mode-round" aria-pressed="false">Round log<small>Length &times; Girth &rarr; CBM</small></button><button type="button" id="mode-fix" aria-pressed="false">Fixed size<small>Length &times; Pcs &rarr; CFT</small></button></div>
+<div class="box" id="rsbox" style="display:none;margin-top:12px">
+  <div class="fx2">
+    <div><label for="rs-len" style="margin-top:0">Round Log Fix Length</label><input id="rs-len" type="text" inputmode="decimal" autocomplete="off" maxlength="8" placeholder="optional, e.g. 2.6" style="width:100%;box-sizing:border-box;min-height:46px;height:46px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:1rem;margin:4px 0 0;display:block"></div>
+    <div><label for="rs-lu" style="margin-top:0">Length unit</label><select id="rs-lu" style="width:100%;box-sizing:border-box;min-height:46px;height:46px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:1rem;margin:4px 0 0;display:block"><option value="m">Meter</option><option value="cm">Cm</option></select></div>
+    <div><label for="rs-gu">Girth unit</label><select id="rs-gu" style="width:100%;box-sizing:border-box;min-height:46px;height:46px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:1rem;margin:4px 0 0;display:block"><option value="cm">Cm</option><option value="m">Meter</option></select></div>
+    <div><label>Entry</label><div id="rs-hint" style="font-size:.88rem;padding-top:6px"></div></div>
+  </div>
+  <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">Diagram &amp; short description (Hoppus)</summary>
+    <svg viewBox="0 0 320 170" width="100%" style="max-width:420px;display:block;margin:8px auto 4px" role="img" aria-label="Round log with length and girth">
+<defs><marker id="rsa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f6f4a"/></marker></defs>
+<path d="M50,38 H260 A14,30 0 0 1 260,98 H50 Z" fill="#d9b382" stroke="#7a5230" stroke-width="2"/>
+<ellipse cx="50" cy="68" rx="14" ry="30" fill="#ead0a3" stroke="#7a5230" stroke-width="2"/>
+<ellipse cx="50" cy="68" rx="8" ry="17" fill="none" stroke="#a97c4a" stroke-width="1.2"/>
+<ellipse cx="50" cy="68" rx="3" ry="7" fill="none" stroke="#a97c4a" stroke-width="1.2"/>
+<path d="M70,50 H240 M70,68 H240 M70,86 H240" stroke="#b78d57" stroke-width="1" opacity=".55"/>
+<ellipse cx="150" cy="68" rx="14" ry="30" fill="none" stroke="#b3261e" stroke-width="3" stroke-dasharray="0"/>
+<line x1="150" y1="34" x2="150" y2="14" stroke="#b3261e" stroke-width="1.5"/>
+<text x="150" y="10" text-anchor="middle" font-size="13" font-weight="700" fill="#b3261e" font-family="Arial,sans-serif">Girth (G) - round the log</text>
+<line x1="36" y1="132" x2="274" y2="132" stroke="#1f6f4a" stroke-width="2" marker-start="url(#rsa)" marker-end="url(#rsa)"/>
+<line x1="36" y1="104" x2="36" y2="138" stroke="#1f6f4a" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="274" y1="104" x2="274" y2="138" stroke="#1f6f4a" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="155" y="152" text-anchor="middle" font-size="13" font-weight="700" fill="#1f6f4a" font-family="Arial,sans-serif">Length (L)</text>
+<text x="155" y="167" text-anchor="middle" font-size="11" fill="#555" font-family="Arial,sans-serif">CBM = G &#215; G &#215; L &#247; 16</text>
+</svg>
+    <div style="font-size:.9rem;line-height:1.5;margin-top:8px">
+      <b>Round Timber Volume Calculator</b><br>
+      Measurement Method: Hoppus (Quarter Girth Rule)<br><br>
+      <b>CBM Formula:</b> CBM = (Girth &times; Girth &times; Length) &divide; 16<br>
+      <b>CFT Formula:</b> CFT = CBM &times; 35.315<br><br>
+      <b>Units used:</b><br>&bull; Girth: Meter (m)<br>&bull; Length: Meter (m)<br>&bull; CBM: Cubic Meter (m&sup3;)<br>&bull; CFT: Cubic Feet (ft&sup3;)<br><br>
+      <b>Example:</b> Girth = 0.39 m, Length = 2.30 m &rarr; CBM = 0.02186 m&sup3;, CFT = 0.7720 ft&sup3;<br><br>
+      <b>How to type:</b><br>&bull; Length not set: write length + girth, e.g. <b>6063</b> or <b>60x63</b> (2.60 m, girth 63 cm).<br>&bull; Length set above: write only the girth, e.g. <b>63</b>.<br>&bull; If Measurement unit is Meter, write girth in meters, e.g. 0.63.<br><br>
+      <i>Note: Volume is calculated using the Hoppus Quarter Girth method. Results may differ from actual cylindrical volume.</i>
+    </div>
+  </details>
+</div>
+<div class="box" id="swbox" style="margin-top:12px">
+  <details><summary style="cursor:pointer;font-weight:700">Diagram &amp; short description (Sawn timber)</summary>
+    <svg viewBox="0 0 390 170" width="100%" style="max-width:420px;display:block;margin:8px auto 4px" role="img" aria-label="Sawn timber with width, thickness and length">
+<defs><marker id="swa" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f6f4a"/></marker></defs>
+<path d="M40,70 H250 L280,48 H70 Z" fill="#ead0a3" stroke="#7a5230" stroke-width="2"/>
+<path d="M250,70 L280,48 V76 L250,98 Z" fill="#c99a62" stroke="#7a5230" stroke-width="2"/>
+<rect x="40" y="70" width="210" height="28" fill="#d9b382" stroke="#7a5230" stroke-width="2"/>
+<path d="M60,78 H235 M60,90 H235" stroke="#b78d57" stroke-width="1" opacity=".55"/>
+<line x1="40" y1="118" x2="250" y2="118" stroke="#1f6f4a" stroke-width="2" marker-start="url(#swa)" marker-end="url(#swa)"/>
+<line x1="40" y1="100" x2="40" y2="124" stroke="#1f6f4a" stroke-width="1" stroke-dasharray="3 3"/>
+<line x1="250" y1="100" x2="250" y2="124" stroke="#1f6f4a" stroke-width="1" stroke-dasharray="3 3"/>
+<text x="145" y="136" text-anchor="middle" font-size="13" font-weight="700" fill="#1f6f4a" font-family="Arial,sans-serif">Length (L) in feet</text>
+<text x="288" y="82" text-anchor="start" font-size="13" font-weight="700" fill="#b3261e" font-family="Arial,sans-serif">Thickness (T)</text>
+<text x="165" y="40" text-anchor="middle" font-size="13" font-weight="700" fill="#b3261e" font-family="Arial,sans-serif">Width (W)</text>
+<text x="160" y="160" text-anchor="middle" font-size="11" fill="#555" font-family="Arial,sans-serif">CFT = W &#215; T &#215; L &#247; 144</text>
+</svg>
+    <div style="font-size:.9rem;line-height:1.5;margin-top:8px">
+      <b>Sawn Timber Volume Calculator</b><br>
+      Measurement Method: Width &times; Thickness &times; Length<br><br>
+      <b>CFT Formula:</b> CFT = (Width &times; Thickness &times; Length) &divide; 144<br>
+      <b>CBM Formula:</b> CBM = CFT &divide; 35.315<br><br>
+      <b>Units used:</b><br>&bull; Width: Inch<br>&bull; Thickness: Inch<br>&bull; Length: Feet (the 2-digit code is feet + inch, e.g. 76 = 7 ft 6 in = 7.5 ft)<br>&bull; CFT: Cubic Feet (ft&sup3;). The sheet shows CFT &times; 100<br><br>
+      <b>Example:</b> Size 7x7-76 &rarr; 7 &times; 7 &times; 7.5 &divide; 144 = 2.552 CFT (the sheet shows 255)<br><br>
+      <b>Length rounding (default, Exact length not ticked):</b> the length goes up to the next 3 inches (0.25 ft). A decimal is read as feet.inches, so 7.30 means 7 ft 3 in.<br>&bull; 7.03 to 7.30 &rarr; 7.25<br>&bull; 7.31 to 7.60 &rarr; 7.50<br>&bull; 7.61 to 7.90 &rarr; 7.75<br>&bull; 7.91 to 8.02 &rarr; 8.00 (a small .01 or .02 above a whole foot counts as that foot)<br>&bull; Inch digit in a code: 1&ndash;3 &rarr; 3 in, 4&ndash;6 &rarr; 6 in, 7&ndash;9 &rarr; 9 in. So 73, 75 and 76 are 7 ft 3 in, 6 in and 6 in.<br><br>
+      <b>Exact length (tick box):</b> when ticked there is no rounding. A decimal is plain decimal feet (7.24 stays 7.24 ft) and 75 is exactly 7 ft 5 in.<br><br>
+      <b>How to type:</b><br>&bull; <b>7776</b>, <b>7 7 76</b> or <b>7x7-76</b> all mean width 7, thickness 7, length 7 ft 6 in.<br>&bull; Two-digit sizes: <b>101076</b> means 10 &times; 10, length 7 ft 6 in.<br>&bull; Decimals work too, e.g. <b>7.5x6-76</b>.<br><br>
+      <i>Note: The value is the real (square-edged) volume of the sawn piece.</i>
+    </div>
+  <label style="display:flex;align-items:center;gap:10px;margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line);font-weight:700;cursor:pointer"><input type="checkbox" id="sw-ex" style="width:22px;height:22px;min-height:0;margin:0;flex:none"> <span>Exact length <span style="font-weight:400;font-size:.88rem">(no rounding: 7.24, 7.43 &hellip; counted as plain decimal feet)</span></span></label>
+  <div style="margin:4px 0 0 32px;font-size:.9rem;font-weight:700;color:var(--wood,#1f6f4a)">Please tick if you need the exact length.</div>
+  </details>
+</div>
 
 <dialog id="dlg-about">
   <div class="tb">Settings: App info</div>
@@ -722,8 +805,8 @@ html.locked body{overflow:hidden}
 <div class="box">
   <label for="sheet-name" style="margin-top:0">Name for sheet heading (optional)</label>
   <input id="sheet-name" type="text" autocomplete="off" maxlength="60" placeholder="e.g. party / vehicle / lot name" style="display:block;width:100%;box-sizing:border-box;min-height:54px;padding:12px 14px;font-size:1.05rem;margin:4px 0 8px">
-  <table>
-    <thead><tr><th>#</th><th id="th-size">Size (7776, 7 7 76 or 7x7-76)</th><th id="th-val">CFT</th><th class="th2">CFT</th><th></th></tr></thead>
+  <table class="etbl">
+    <thead><tr><th>#</th><th id="th-size">Size (7776, 7x7-76 or 7x7-7.25)</th><th id="th-val">CFT</th><th class="th2">CFT</th><th></th></tr></thead>
     <tbody id="rows"></tbody>
   </table>
   <div class="bar">
@@ -776,7 +859,7 @@ html.locked body{overflow:hidden}
 </dialog>
 <dialog id="dlg-preview">
   <div class="tb">Print preview</div>
-  <div class="bd"><div id="pv-box"><div id="pv-page"><div id="pv-sheet" class="sheet"></div></div></div></div>
+  <div class="bd"><div id="pv-box"><div id="pv-page"><div id="pv-sheet" class="sheet"></div><div id="pv-promo" hidden></div></div></div></div>
   <div class="ft" style="flex-wrap:wrap">
     <div id="pv-msg" role="status" style="flex:1 1 100%;font-size:.85rem;min-height:1.1em"></div>
     <button type="button" class="alt" data-close>Close</button><button type="button" id="pv-print">Print</button><button type="button" id="pv-wa" style="background:#25a244" aria-label="Share PDF on WhatsApp">WhatsApp</button>
@@ -813,22 +896,36 @@ let MODE='sawn'; try{ const mk=localStorage.getItem(MODEKEY); if(mk==='round'||m
 // Round log: CFT = Girth(cm) x Girth(cm) x Length(m) x 2.2072 / 10000 ; CBM = CFT / 35.3147
 // Length code: 2 digits = 2 m + cm (60 = 2.60 m, 55 = 2.55 m), 3 digits = centimetres (205 = 2.05 m)
 const CFT_FACTOR=2.2072, CFT_PER_CBM=35.3147;
-function lengthM(raw){
+function lengthM(raw,base){
   const t=String(raw);
   if(t.indexOf('.')>-1) return parseFloat(t);
   const n=parseInt(t,10); if(isNaN(n)) return null;
-  return n>=100? n/100 : 2+n/100;
+  return n>=100? n/100 : (base||2)+n/100;   // 2-digit code = base metres + cm (base = whole metres of the fixed length, else 2)
 }
+const RSKEY='logcft_roundset_v2';
+let RS={len:'2',lu:'m',gu:'cm'}; try{const v=JSON.parse(localStorage.getItem(RSKEY)||'null'); if(v&&typeof v==='object') RS={len:(v.len===undefined?'2':String(v.len||'')),lu:v.lu==='cm'?'cm':'m',gu:v.gu==='m'?'m':'cm'}}catch(e){}
+function fixedLenM(){const v=parseFloat(RS.len); if(!(v>0)) return 0; return RS.lu==='cm'? v/100 : v}
+function rsHint(){const f=fixedLenM(); return f>0?('Length '+f.toFixed(2)+' m fixed. Type girth only ('+(RS.gu==='m'?'m, e.g. 0.63':'cm, e.g. 63')+').'):('Type length + girth, e.g. '+(RS.gu==='m'?'60x0.63':'6063 or 60x63'))}
 function parseRound(size){
   const t=String(size).trim().match(/\d+(?:\.\d+)?/g); if(!t) return null;
+  const gk=RS.gu==='m'?100:1, fl=fixedLenM();
+  if(fl>0 && t.length===1){
+    const g1=parseFloat(t[0])*gk;
+    if(g1>=10 && g1<=500 && fl>=0.3 && fl<=15) return {L:fl.toFixed(2),G:t[0],m:fl,g:g1,fixed:true};
+  }
   let L,G;
-  if(t.length===1 && /^\d{4}$/.test(t[0])){L=t[0].slice(0,2);G=t[0].slice(2)}
-  else if(t.length===1 && /^\d{5}$/.test(t[0])){L=t[0].slice(0,3);G=t[0].slice(3)}
+  if(t.length===1 && gk===1 && /^\d{4}$/.test(t[0])){L=t[0].slice(0,2);G=t[0].slice(2)}
+  else if(t.length===1 && gk===1 && /^\d{5}$/.test(t[0])){L=t[0].slice(0,3);G=t[0].slice(3)}
   else if(t.length===2){L=t[0];G=t[1]}
   else return null;
-  const m=lengthM(L), g=parseFloat(G);
-  if(m===null||isNaN(g)||m<0.3||m>15||g<10||g>500) return null;
+  const m=(fl>0)?lengthM(L,Math.floor(fl)):((RS.lu==='cm')?parseFloat(L)/100:lengthM(L)), g=parseFloat(G)*gk;
+  if(m===null||isNaN(m)||isNaN(g)||m<0.3||m>15||g<10||g>500) return null;
   return {L:L,G:G,m:m,g:g};
+}
+function needsLen(v){   // round log, no length selected, and only a girth typed
+  if(MODE!=='round'||fixedLenM()>0||!v) return false;
+  const t=String(v).trim().match(/\d+(?:\.\d+)?/g);
+  return !!t && t.length===1 && !parseRound(v);
 }
 function roundVol(size){
   const p=parseRound(size); if(!p) return null;
@@ -836,11 +933,27 @@ function roundVol(size){
   return {cft:cft,cbm:cft/CFT_PER_CBM,m:p.m,g:p.g};
 }
 function fmtVal(c,mode){return (mode||MODE)==='round'?c.toFixed(3):c.toFixed(2)}
+const SWKEY='logcft_sawnset_v1';
+let SW={ex:false}; try{const v=JSON.parse(localStorage.getItem(SWKEY)||'null'); if(v&&typeof v==='object') SW={ex:!!v.ex}}catch(e){}
+function swSizeLabel(){return 'Size (7776, 7x7-76 or 7x7-7.25)'}
+// Length in feet.
+// Not ticked: a typed decimal is feet.inches (7.30 = 7 ft 3 in) and goes UP to the next 3 inches (0.25 ft):
+//   7.03-7.30 -> 7.25, 7.31-7.60 -> 7.50, 7.61-7.90 -> 7.75, 7.91-8.02 -> 8.00 (x.00, x.01 and x.02 count as x.00).
+// A 2-digit code like 76 = 7 ft 6 in; its inch digit 1-3 -> 3 in, 4-6 -> 6 in, 7-9 -> 9 in.
+// Ticked "Exact length": no rounding; a decimal is plain decimal feet (7.24 = 7.24 ft) and 75 = 7 ft 5 in exactly.
 function lengthFt(code){
-  const n = parseInt(code,10);
+  const c=String(code);
+  if(c.indexOf('.')>-1){
+    const f=parseFloat(c); if(isNaN(f)) return null;
+    if(SW.ex) return f;
+    const whole=Math.floor(f+1e-9), h=Math.round((f-whole)*1e6)/1e4;   // fraction as 0..99.99 (two digits = tenths of an inch)
+    if(h<=2.0001) return whole;
+    return whole + Math.ceil(h/30-1e-9)*0.25;
+  }
+  const n = parseInt(c,10);
   if (isNaN(n)) return null;
   const feet = Math.floor(n/10), inch = n%10;
-  return feet + inch/12;
+  return feet + (SW.ex ? inch/12 : Math.ceil(inch/3)*0.25);
 }
 // Accepts: 7x7-76, 7 7 76, 7776, 7-7-76, 7*7*76, 77 76, 7.5x6-76
 function parseSize(size){
@@ -857,14 +970,16 @@ function parseSize(size){
     a=t[0][0]; b=t[0][1]; code=t[1];
   } else if(t.length===2 && /^\d{3}$/.test(t[1])){    // 7 776
     a=t[0]; b=t[1][0]; code=t[1].slice(1);
+  } else if(t.length===2 && /^\d{2}$/.test(t[0]) && /^\d+\.\d+$/.test(t[1])){  // 77 7.25 (length in feet with decimal)
+    a=t[0][0]; b=t[0][1]; code=t[1];
   } else if(t.length===3){                            // 7 7 76 / 7x7-76
     [a,b,code]=t;
   } else return null;
-  if(!/^\d{2}$/.test(code)) return null;
+  if(!/^\d{2}$/.test(code) && !(/^\d+\.\d+$/.test(code) && parseFloat(code)>0 && parseFloat(code)<=100)) return null;
   return {a:parseFloat(a),b:parseFloat(b),code};
 }
 function normalize(size){
-  if(MODE==='round'){const r=parseRound(size);return r? r.L+'x'+r.G : size}
+  if(MODE==='round'){const r=parseRound(size);return r? (r.fixed? r.G : r.L+'x'+r.G) : size}
   const p=parseSize(size);
   return p ? p.a+'x'+p.b+'-'+p.code : size;
 }
@@ -1014,7 +1129,8 @@ function update(){
     const cell=tr.querySelector('.cft');
     const c2=tr.querySelector('.cft2'); const rv=(MODE==='round'&&v)?roundVol(v):null; if(c2) c2.textContent=rv?rv.cft.toFixed(2):''; if(rv) sumCft+=rv.cft;
     tr.classList.toggle('bad',c===null&&!!v);
-    if(c===null){cell.textContent=v?'?':'-';cell.className='num cft'+(v?' err':'');}
+    const nl=needsLen(v); tr.dataset.nl=nl?'1':'';
+    if(c===null){cell.textContent=v?(nl?'Select length':'?'):'-';cell.className='num cft'+(v?' err':'');if(nl)cell.style.fontSize='.7rem';else cell.style.fontSize='';}
     else{cell.textContent=fmtVal(c);cell.className='num cft';sum+=c;cnt++;}
     const ck=tr.dataset.sc?sheetCheck(tr.dataset.sc,v):null, xb=!!ck&&!ck.ok&&c!==null;
     tr.classList.toggle('xbad',xb);
@@ -1023,7 +1139,7 @@ function update(){
   { const nx=rows.querySelectorAll('tr.xbad').length, xc=document.getElementById('xchk');
     if(xc){xc.hidden=!nx;document.getElementById('xchk-n').textContent=nx+(nx===1?' row does':' rows do')+' not match the sheet\'s '+(MODE==='round'?'CFT/CBM':'C.F.T.')+' - check the size'} }
   const nb=rows.querySelectorAll('tr.bad').length, ck=document.getElementById('chk');
-  if(ck){ck.hidden=!nb;document.getElementById('chk-n').textContent=nb+(nb===1?' size needs':' sizes need')+' checking';}
+  if(ck){ck.hidden=!nb;const nn=rows.querySelectorAll('tr.bad[data-nl="1"]').length; document.getElementById('chk-n').textContent=nn?('Select length: set "Round log length" above, or type length + girth (e.g. 6063)'+(nb>nn?' - '+(nb-nn)+' more need checking':'')):nb+(nb===1?' size needs':' sizes need')+' checking';}
   const g={};
   getList().forEach(v=>{
     const c=calc(v); if(c===null) return;
@@ -1180,7 +1296,7 @@ function makeSheetPdf(){
       const g='Total '+(round?'CBM':'CFT')+': '+fmtVal(grand)+'   ('+l.length+' logs)'+(round?'   CFT: '+(grand*CFT_PER_CBM).toFixed(2):'');
       T(W/2,top+2*HH+per*RH+26,g,13,true,'c');
     }
-    pdfPages.push(c);
+    pdfPages.push(c+promoPdf(W,H));
   }
   // assemble PDF
   const objs=[]; const add=t=>{objs.push(t);return objs.length};
@@ -1749,15 +1865,32 @@ document.getElementById('mi-theme').onclick=()=>{closeMenus();renderSwatches();d
 
 
 
+// Free plan (Android app): a small "ad-free" line at the bottom of printed sheets, previews and PDFs
+function freePromoText(){ try{ return (window.NATIVE&&!(window.LogAds&&LogAds.isPremium()))?'Free version  |  Subscribe to Premium for an ad-free version  |  Log CFT/CBM Calculator':'' }catch(e){return ''} }
+function promoPdf(W,H){
+  const t=freePromoText(); if(!t) return '';
+  const sz=8; let w=0; for(const ch of t){const k=ch.charCodeAt(0)-32; w+=(k>=0&&k<95?HW[k]:556)/1000} w*=sz;
+  return 'q 0.35 g BT /F1 '+sz+' Tf '+(Math.round((W-w)/2*100)/100)+' 14 Td ('+t.replace(/([\\()])/g,'\\$1')+') Tj ET Q\n';
+}
+(function(){
+  let pp=document.getElementById('print-promo'); if(!pp){pp=document.createElement('div');pp.id='print-promo';document.body.appendChild(pp)}
+  window.addEventListener('beforeprint',()=>{const t=freePromoText(); pp.textContent=t; document.body.classList.toggle('free-print',!!t)});
+  window.addEventListener('afterprint',()=>document.body.classList.remove('free-print'));
+})();
 // ---------- Print preview: shows the A4 sheet first, then Print ----------
 function fitPreview(){
   const box=document.getElementById('pv-box'), pg=document.getElementById('pv-page');
   pg.style.transform='none'; const k=Math.min(1,box.clientWidth/pg.offsetWidth);
   pg.style.transform='scale('+k+')'; box.style.height=Math.ceil(pg.offsetHeight*k)+'px';
 }
-function showPreview(){
+function showPreview(){   // Free plan (Android app): one full-screen ad, then the preview
+  const go=()=>showPreviewNow();
+  if(window.LogAds&&LogAds.interstitial) LogAds.interstitial().then(go,go); else go();
+}
+function showPreviewNow(){
   pvSay('');
   document.getElementById('pv-sheet').innerHTML=document.getElementById('sheet').innerHTML;
+  {const pv=document.getElementById('pv-promo'), t=freePromoText(); pv.textContent=t; pv.hidden=!t}
   const dlg=document.getElementById('dlg-preview'); if(!dlg.open) dlg.showModal();
   fitPreview(); requestAnimationFrame(fitPreview);
 }
@@ -2009,7 +2142,8 @@ function pdfFromPages(pages,W,H){
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   const kids=[];
-  pages.forEach(cs=>{
+  pages.forEach(cs0=>{
+    const cs=cs0+promoPdf(W,H);
     const cid=objs.length+2;
     kids.push(add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+cid+' 0 R >>')+' 0 R');
     add('<< /Length '+cs.length+' >>\nstream\n'+cs+'endstream');
@@ -2131,10 +2265,10 @@ function applyMode(){
   if(MODE==='fix') fxRender();
   document.getElementById('mode-round').setAttribute('aria-pressed',String(r));
   const _st=document.getElementById('subtxt'); if(_st) _st.textContent=r?'Upload a photo of the round log sheet. Length and girth are read automatically and the CBM is calculated.':'Upload a photo of the measurement sheet. Sizes are read automatically and the CFT is calculated.';
-  document.getElementById('th-size').textContent=r?'Length x Girth (25 45 or 25x45)':'Size (7776, 7 7 76 or 7x7-76)';
+  document.getElementById('th-size').textContent=r?'Length x Girth (6063 or 60x63)':swSizeLabel();
   document.getElementById('th-val').textContent=r?'CBM':'CFT';
   document.getElementById('tot-label').textContent=r?'Total CBM':'Total CFT';
-  document.getElementById('grp-title').textContent=r?'By length':'By first number';
+  document.getElementById('grp-title').textContent='Sort';
   document.getElementById('grp-h1').textContent=r?'Length':'Size';
   document.getElementById('grp-h3').textContent=r?'CBM':'CFT';
   document.getElementById('sort').textContent=r?'Sort by length':'Sort by first number';
@@ -2191,6 +2325,25 @@ function requireActive(){ return !BLOCKED }
 document.getElementById('mi-plans').onclick=()=>{closeMenus();location.href='plans.html'};
 document.getElementById('mi-about').onclick=()=>{closeMenus();refreshAct();document.getElementById('dlg-about').showModal()};
 refreshAct();
+(function(){
+  var L=document.getElementById('rs-len'),U=document.getElementById('rs-lu'),G=document.getElementById('rs-gu'),H=document.getElementById('rs-hint');
+  L.value=RS.len; U.value=RS.lu; G.value=RS.gu;
+  function ap(){
+    RS.len=L.value.trim(); RS.lu=U.value; RS.gu=G.value;
+    try{localStorage.setItem(RSKEY,JSON.stringify(RS))}catch(e){}
+    H.textContent=rsHint();
+    if(MODE==='round'){ var th=document.getElementById('th-size'); if(th) th.textContent='Length x Girth (6063 or 60x63)'; update(); }
+  }
+  ['input','change'].forEach(function(e){L.addEventListener(e,ap);U.addEventListener(e,ap);G.addEventListener(e,ap)});
+  H.textContent=rsHint();
+})();
+(function(){
+  var X=document.getElementById('sw-ex'); if(!X) return; X.checked=!!SW.ex;
+  X.addEventListener('change',function(){
+    SW.ex=X.checked; try{localStorage.setItem(SWKEY,JSON.stringify(SW))}catch(e){}
+    if(MODE==='sawn'){ var th=document.getElementById('th-size'); if(th) th.textContent=swSizeLabel(); update(); }
+  });
+})();
 fname.value=getCurrent()||today();
 renderFiles();
 load();
@@ -2202,7 +2355,7 @@ phRestore(getCurrent());
   const toast=t=>{let e=document.getElementById('bk-toast'); if(!e){e=document.createElement('div');e.id='bk-toast';e.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;font-size:.9rem;z-index:99999;opacity:0;transition:opacity .2s;pointer-events:none';document.body.appendChild(e)} e.textContent=t;e.style.opacity='1';clearTimeout(e._t);e._t=setTimeout(()=>{e.style.opacity='0'},2200)};
   // Android app: handle the hardware back button natively (no history tricks)
   if(window.NATIVE){
-    const AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
+    let AP=null; try{ const C=window.Capacitor; AP=(C&&C.Plugins&&C.Plugins.App)||(C&&C.registerPlugin&&C.registerPlugin('App')); }catch(e){}
     if(AP&&AP.addListener){
       AP.addListener('backButton',()=>{
         const dlg=[...document.querySelectorAll('dialog[open]')].pop();

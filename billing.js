@@ -1,7 +1,9 @@
 // Google Play subscriptions in the Android app (cordova-plugin-purchase).
 // Used by plans.html (buy / restore) and ads.js (quiet re-check of renewals).
 (function () {
-  var C = window.LOGCFT || {}, P = C.products || { prem: 'premium_monthly', ai: 'ai_yearly' };
+  var C = window.LOGCFT || {}, P = C.products || {};
+  P.prem = P.prem || 'premium_monthly'; P.aiBasic = P.aiBasic || 'ai_basic_yearly'; P.aiStandard = P.aiStandard || 'ai_standard_yearly'; P.aiPremium = P.aiPremium || 'ai_premium_yearly';
+  var AI_IDS = [P.aiBasic, P.aiStandard, P.aiPremium];
   var W = (C.workerUrl || '').replace(/\/+$/, '');
   var S = { ready: false, store: null, plat: null, price: {}, err: '', onChange: null };
 
@@ -23,7 +25,8 @@
   }
   async function verifyTx(t) {
     var tok = tokenOf(t); if (!tok || !W || !dev()) return false;
-    await api('/verify', { deviceId: dev(), purchaseToken: tok });
+    var em = ''; try { em = localStorage.getItem('logcft_email_v1') || ''; } catch (e) {}
+    await api('/verify', { deviceId: dev(), purchaseToken: tok, email: em });
     try { if (t.finish) await t.finish(); } catch (e) {}
     return true;
   }
@@ -38,14 +41,16 @@
       try {
         store.register([
           { id: P.prem, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
-          { id: P.ai, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat }
+          { id: P.aiBasic, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
+          { id: P.aiStandard, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
+          { id: P.aiPremium, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat }
         ]);
         store.when().approved(function (t) {
           verifyTx(t).then(function () { if (S.onChange) S.onChange('Done. Your plan is active.'); })
             .catch(function (e) { if (S.onChange) S.onChange('Purchase not completed: ' + (e.message || e)); });
         });
         await store.initialize([S.plat]);
-        [P.prem, P.ai].forEach(function (id) {
+        [P.prem].concat(AI_IDS).forEach(function (id) {
           try {
             var p = store.get(id, S.plat), o = p && p.offers && p.offers[0];
             var ph = o && o.pricingPhases && o.pricingPhases[o.pricingPhases.length - 1];
