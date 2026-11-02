@@ -687,6 +687,9 @@ html.locked body{overflow:hidden}
   <div class="bd">
     <p style="margin:0 0 4px;font-size:.85rem">Logged in as</p>
     <p style="margin:0 0 12px;font-size:1.05rem;font-weight:700;overflow-wrap:anywhere" id="ac-email"></p>
+    <p style="margin:0 0 4px;font-size:.85rem">Device ID</p>
+    <p style="margin:0 0 6px;font-size:.9rem;font-weight:700;font-family:monospace;overflow-wrap:anywhere;user-select:all" id="ac-dev"></p>
+    <button type="button" class="alt" id="ac-devcopy" style="margin:0 0 12px;padding:6px 12px">Copy Device ID</button>
     <p style="margin:0;font-size:.82rem">Your account is used to reset your PIN if you forget it. Your saved files stay on this phone after log out.</p>
   </div>
   <div class="ft"><button type="button" class="alt" data-close>Close</button><button type="button" id="ac-out" style="background:var(--bad)">Log out</button></div>
@@ -3113,7 +3116,14 @@ setTimeout(go,1800);})();
   // account dialog + log out
   $('mi-email').onclick=function(){
     closeMenus(); var a=get(); $('ac-email').textContent=a&&a.email?a.email:'Not logged in';
-    $('ac-out').hidden=!a; $('dlg-account').showModal();
+    $('ac-out').hidden=!a;
+    var dv='';try{dv=getDeviceId()}catch(e){} $('ac-dev').textContent=dv||'-';
+    $('dlg-account').showModal();
+  };
+  $('ac-devcopy').onclick=function(){
+    var t=$('ac-dev').textContent, b=$('ac-devcopy');
+    function ok(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy Device ID'},1500)}
+    try{ navigator.clipboard.writeText(t).then(ok,function(){}) }catch(e){}
   };
   $('ac-out').onclick=async function(){
     if(!(await askConfirm('Log out? Your saved files stay on this phone. You will need your email and password to log in again.','Log out'))) return;
