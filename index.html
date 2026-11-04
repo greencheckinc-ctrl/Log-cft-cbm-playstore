@@ -686,6 +686,15 @@ html.locked body{overflow:hidden}
   <button type="button" id="bk-bar-x" class="alt" style="margin:0;padding:6px 10px;min-height:0">Later</button>
 </div>
 
+<dialog id="dlg-aiconsent">
+  <div class="tb">Before AI reading</div>
+  <div class="bd">
+    <p style="margin:0 0 8px;font-size:.95rem">When you tap <b>Read sizes</b>, your sheet photo (and zoomed crops) is sent to a third-party AI service to read the sizes.</p>
+    <p style="margin:0 0 8px;font-size:.9rem">AI can make mistakes. <b>Please check every size against your original sheet.</b></p>
+    <p style="margin:0;font-size:.82rem;opacity:.85">Only photograph sheets you have the right to share. See our <a href="privacy.html" target="_blank">Privacy Policy</a> and <a href="terms.html" target="_blank">Terms</a>. You can stop any time by not using Read sizes.</p>
+  </div>
+  <div class="ft"><button type="button" class="alt" data-close>Cancel</button><button type="button" id="aic-ok">I agree</button></div>
+</dialog>
 <dialog id="dlg-limit">
   <div class="tb" id="lm-t">Daily limit reached</div>
   <div class="bd">
@@ -1841,8 +1850,11 @@ function setP(p){
   document.getElementById('progbar').style.width=p+'%';
   st.innerHTML='Reading sizes... <strong>'+p+'%</strong>';
 }
+function aiConsentOk(){try{return localStorage.getItem('logcft_ai_consent_v1')==='1'}catch(e){return false}}
+document.getElementById('aic-ok').onclick=()=>{try{localStorage.setItem('logcft_ai_consent_v1','1')}catch(e){} document.getElementById('dlg-aiconsent').close(); document.getElementById('go').click()};
 document.getElementById('go').onclick=async()=>{
   if(!requireActive()) return;
+  if(!aiConsentOk()){ if(!PHOTOS.length){st.innerHTML='<span class="err">Please choose a photo first.</span>';return} document.getElementById('dlg-aiconsent').showModal(); return; }
   if(phBusy) return;
   if(!PHOTOS.length){st.innerHTML='<span class="err">Please choose a photo first.</span>';return}
   const todo=PHOTOS.filter(p=>p.state!=='done');
