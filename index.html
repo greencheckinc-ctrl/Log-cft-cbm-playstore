@@ -233,7 +233,7 @@ body.round .th2,body.round .cft2{display:table-cell}
   .sheet table th{white-space:normal;font-size:10.5px;line-height:1.1;padding:0 1mm;text-align:center;overflow:hidden}
   .sheet .tot{font-size:14px;padding:2mm}
   .sheet .grand{font-size:16px;margin-top:3mm}
-  body>*:not(#sheet):not(#print-promo){display:none!important}
+  body>*:not(#sheet):not(#print-promo):not(#print-wm){display:none!important}
   #sheet{display:block!important}
   body{background:#fff;padding:0;max-width:none}
 }
@@ -301,6 +301,10 @@ body.fix > .box{display:none}
 #pv-sheet .fxpage{margin-bottom:8mm;border-bottom:1px dashed #bbb}
 #pv-sheet .fxpage:last-child{margin-bottom:0;border-bottom:0}
 
+#print-wm,#pv-wm{display:none}
+#pv-page{position:relative}
+#pv-wm.on{display:block;position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:5;background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='300'%20height='190'%3E%3Ctext%20x='150'%20y='95'%20text-anchor='middle'%20transform='rotate(-30%20150%2095)'%20font-family='Arial,Helvetica,sans-serif'%20font-size='21'%20font-weight='bold'%20fill='%23000'%20fill-opacity='0.11'%3ELog%20CFT/CBM%20Calculator%3C/text%3E%3C/svg%3E") repeat}
+@media print{body.free-print #print-wm{display:block;position:fixed;left:0;top:0;width:100%;height:100%;z-index:9998;pointer-events:none;background:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='300'%20height='190'%3E%3Ctext%20x='150'%20y='95'%20text-anchor='middle'%20transform='rotate(-30%20150%2095)'%20font-family='Arial,Helvetica,sans-serif'%20font-size='21'%20font-weight='bold'%20fill='%23000'%20fill-opacity='0.11'%3ELog%20CFT/CBM%20Calculator%3C/text%3E%3C/svg%3E") repeat;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 #print-promo{display:none}
 #pv-promo{margin-top:6mm;padding-top:2mm;border-top:1px solid #ccc;text-align:center;font:11px Arial,Helvetica,sans-serif;color:#555}
 @media print{body.free-print #print-promo{display:block;position:fixed;left:0;right:0;bottom:0;text-align:center;font:9px Arial,Helvetica,sans-serif;color:#555;border-top:1px solid #ccc;padding-top:1mm;background:#fff}}
@@ -461,7 +465,7 @@ html.locked body{overflow:hidden}
 #bpv-page .b-pg{margin-bottom:5mm;box-shadow:0 0 0 1px #bbb}
 #bpv-page .b-pg:last-child{margin-bottom:0}
 @media print{
-  body>*:not(#sheet):not(#print-promo){display:none!important}
+  body>*:not(#sheet):not(#print-promo):not(#print-wm){display:none!important}
   #sheet .bill{width:194mm}
 }
 </style>
@@ -682,6 +686,16 @@ html.locked body{overflow:hidden}
   <button type="button" id="bk-bar-x" class="alt" style="margin:0;padding:6px 10px;min-height:0">Later</button>
 </div>
 
+<dialog id="dlg-limit">
+  <div class="tb" id="lm-t">Daily limit reached</div>
+  <div class="bd">
+    <p id="lm-h" style="margin:0 0 8px;font-size:1.05rem;font-weight:700">You have used today’s 50 free entries.</p>
+    <p id="lm-p" style="margin:0 0 6px;font-size:.92rem">The Free plan allows 50 new entries per day. Come back tomorrow, or subscribe to <b>Premium</b> for unlimited entries, Merge &amp; sort, no ads and no watermark.</p>
+    <p style="margin:0;font-size:.82rem;opacity:.8">An active AI plan also removes this limit.</p>
+  </div>
+  <div class="ft"><button type="button" class="alt" data-close>Not now</button><button type="button" id="lm-plans">See plans</button></div>
+</dialog>
+
 <dialog id="dlg-account">
   <div class="tb">Account</div>
   <div class="bd">
@@ -797,7 +811,11 @@ html.locked body{overflow:hidden}
 
 <div class="box">
   <label for="file">Sheet photos (add one or many)</label>
+  <button id="cam-btn" type="button" class="alt" style="width:100%;margin:0 0 8px">&#128247; Take photo (camera)</button>
+  <input id="file-cam" type="file" accept="image/*" capture="environment" style="display:none">
   <input id="file" type="file" accept="image/*" multiple>
+  <label for="file-doc" style="margin-top:10px;display:block">Or Excel (.xlsx / .xls), CSV or PDF file</label>
+  <input id="file-doc" type="file" accept=".xlsx,.xlsm,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" multiple>
   <div id="photos"></div>
   <img id="prev" alt="" hidden>
   <div class="btnrow" style="grid-template-columns:1fr"><button id="go" type="button">Read sizes</button></div>
@@ -814,6 +832,7 @@ html.locked body{overflow:hidden}
   </table>
   <div class="bar">
     <button id="sort" type="button" class="alt">Sort by first number</button>
+    <button id="sort-g" type="button" class="alt" style="display:none">Sort by girth</button>
     <button id="print" type="button">Print sheet</button>
     <button id="clear" type="button" class="alt">Clear all</button>
   </div>
@@ -825,18 +844,22 @@ html.locked body{overflow:hidden}
     <span id="xchk-n" style="color:#b3261e;font-weight:600"></span>
     <button type="button" id="xchk-go" style="margin-left:8px;padding:6px 12px;background:#c62828">Go to next</button>
   </div>
+  <div id="free-left" class="sub" style="font-size:.8rem;margin:2px 0 0;font-weight:600" hidden></div>
   <div id="saved" class="sub" style="font-size:.8rem;margin:0" role="status"></div>
   <div class="total"><span id="tot-label">Total CFT</span>: <span id="sum">0.00</span> &nbsp;(<span id="cnt">0</span> logs)<span id="tot2" style="display:block;font-size:.85rem;font-weight:600;color:var(--muted)"></span></div>
 </div>
 
 <div class="box">
-  <strong id="grp-title">By first number</strong>
-  <div class="bar" id="grp-sortbar"><button type="button" id="gs-k">Sort by size</button><button type="button" id="gs-n" class="alt">Sort by logs</button><button type="button" id="gs-c" class="alt">Sort by CFT</button></div>
+  <button type="button" id="grp-toggle" class="alt" aria-expanded="false" aria-controls="grp-body" style="display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;font-weight:700;font-size:1.1rem"><span id="grp-title">Sort</span><span id="grp-arrow" aria-hidden="true">&#9662;</span></button>
+<div id="grp-body" hidden style="margin-top:10px">
+  <div class="bar" id="grp-sortbar"><button type="button" id="gs-k">Sort by size</button><button type="button" id="gs-g" class="alt" style="display:none">Sort by girth</button><button type="button" id="gs-c" class="alt">Sort by CFT</button></div>
   <div id="grp-ranges"></div>
   <div class="bar" style="grid-template-columns:1fr 1fr"><button type="button" id="gr-add" class="alt">+ Range</button><button type="button" id="gr-clear" class="alt">Clear ranges</button></div>
   <table><thead><tr><th id="grp-h1">Size</th><th id="grp-h2">Logs</th><th id="grp-h3">CFT</th></tr></thead><tbody id="grp"></tbody></table>
   <div class="bar" style="grid-template-columns:1fr"><button type="button" id="grp-bill">Generate bill</button></div>
 </div>
+</div>
+<script>(function(){var t=document.getElementById("grp-toggle"),b=document.getElementById("grp-body"),r=document.getElementById("grp-arrow");t.addEventListener("click",function(){var o=b.hidden;b.hidden=!o;t.setAttribute("aria-expanded",String(o));r.innerHTML=o?"&#9652;":"&#9662;";});})();</script>
 <dialog id="dlg-merge">
   <div class="tb">Merge &amp; sort table</div>
   <div class="bd" id="mfbox">
@@ -862,7 +885,7 @@ html.locked body{overflow:hidden}
 </dialog>
 <dialog id="dlg-preview">
   <div class="tb">Print preview</div>
-  <div class="bd"><div id="pv-box"><div id="pv-page"><div id="pv-sheet" class="sheet"></div><div id="pv-promo" hidden></div></div></div></div>
+  <div class="bd"><div id="pv-box"><div id="pv-page"><div id="pv-wm"></div><div id="pv-sheet" class="sheet"></div><div id="pv-promo" hidden></div></div></div></div>
   <div class="ft" style="flex-wrap:wrap">
     <div id="pv-msg" role="status" style="flex:1 1 100%;font-size:.85rem;min-height:1.1em"></div>
     <button type="button" class="alt" data-close>Close</button><button type="button" id="pv-print">Print</button><button type="button" id="pv-wa" style="background:#25a244" aria-label="Share PDF on WhatsApp">WhatsApp</button>
@@ -907,7 +930,7 @@ function lengthM(raw,base){
 }
 const RSKEY='logcft_roundset_v2';
 let RS={len:'2',lu:'m',gu:'cm'}; try{const v=JSON.parse(localStorage.getItem(RSKEY)||'null'); if(v&&typeof v==='object') RS={len:(v.len===undefined?'2':String(v.len||'')),lu:v.lu==='cm'?'cm':'m',gu:v.gu==='m'?'m':'cm'}}catch(e){}
-function fixedLenM(){const v=parseFloat(RS.len); if(!(v>0)) return 0; return RS.lu==='cm'? v/100 : v}
+function fixedLenM(){const v=parseFloat(RS.len); if(!(v>0)) return 0; return (RS.lu==='cm'||v>=100)? v/100 : v}   // a whole number of 100 or more is centimetres: 264 = 2.64 m (base 2)
 function rsHint(){const f=fixedLenM(); return f>0?('Length '+f.toFixed(2)+' m fixed. Type girth only ('+(RS.gu==='m'?'m, e.g. 0.63':'cm, e.g. 63')+').'):('Type length + girth, e.g. '+(RS.gu==='m'?'60x0.63':'6063 or 60x63'))}
 function parseRound(size){
   const t=String(size).trim().match(/\d+(?:\.\d+)?/g); if(!t) return null;
@@ -995,11 +1018,34 @@ function calcM(size,mode){
 function calc(size){return calcM(size,MODE)}
 const rows = document.getElementById('rows');
 function kpOn(){try{return localStorage.getItem('logcft_kp_v1')!=='sys'}catch(e){return true}}
+// Free plan (Android app): 50 new entries per day in total (all sheets), then a popup about Premium. Premium or an active AI plan has no limit. Merge & sort is Premium only.
+const FREE_MAX=50, DAYKEY='logcft_daily_v1';
+function freeLimited(){ try{ return !!(window.NATIVE&&window.LogAds&&!LogAds.isPremium()&&!(LogAds.isAiActive&&LogAds.isAiActive())) }catch(e){return false} }
+function dailyUsed(){ try{ const v=JSON.parse(localStorage.getItem(DAYKEY)||'null'); return (v&&v.d===today())?(+v.n||0):0 }catch(e){return 0} }
+function dailyAdd(k){ try{ localStorage.setItem(DAYKEY,JSON.stringify({d:today(),n:Math.max(0,dailyUsed()+k)})) }catch(e){} freeLeftLabel() }
+function freeLeftLabel(){ const e=document.getElementById('free-left'); if(!e) return; if(!freeLimited()){e.hidden=true;return} e.hidden=false; e.textContent='Free plan: '+Math.max(0,FREE_MAX-dailyUsed())+' of '+FREE_MAX+' entries left today' }
+function showLimit(kind){
+  const d=document.getElementById('dlg-limit'); if(!d) return;
+  const m=kind==='merge';
+  document.getElementById('lm-t').textContent=m?'Premium feature':'Daily limit reached';
+  document.getElementById('lm-h').textContent=m?'Merge & sort is a Premium feature.':'You have used today\u2019s 50 free entries.';
+  document.getElementById('lm-p').innerHTML=m?'Subscribe to <b>Premium</b> to merge and sort your sheets, with unlimited entries, no ads and no watermark.':'The Free plan allows 50 new entries per day. Come back tomorrow, or subscribe to <b>Premium</b> for unlimited entries, Merge &amp; sort, no ads and no watermark.';
+  if(!d.open) d.showModal();
+}
 function addRow(size='',after=null){
   const tr = document.createElement('tr');
   tr.innerHTML = '<td class="idx"></td><td><input value="'+size+'" inputmode="'+(kpOn()?'none':'numeric')+'" autocomplete="off" enterkeyhint="next" aria-label="Size"></td><td class="num cft">-</td><td class="num cft2"></td><td class="act"><button class="ghost plus" type="button" aria-label="Add row below">+</button><button class="ghost del" type="button" aria-label="Remove row">x</button></td>';
   const inp=tr.querySelector('input');
-  inp.addEventListener('input',update);
+  inp.addEventListener('input',()=>{
+    if(freeLimited()){
+      const has=!!inp.value.trim();
+      if(has&&!inp._cnt){
+        if(dailyUsed()>=FREE_MAX){ inp.value=''; update(); showLimit(); return }
+        inp._cnt=true; dailyAdd(1);
+      }else if(!has&&inp._cnt){ inp._cnt=false; dailyAdd(-1) }   // typing and then clearing the same entry does not use up the daily count
+    }
+    update();
+  });
   inp.addEventListener('blur',()=>{inp.value=normalize(inp.value);update()});
   inp.addEventListener('focus',()=>{inp._wasRed=tr.classList.contains('bad')||tr.classList.contains('xbad')});
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();inp.value=normalize(inp.value);update();
@@ -1037,11 +1083,12 @@ function load(){
   }catch(e){}
 }
 // "By length" / "By first number" table: tap a header to sort (tap again = reverse)
-var GSORT={k:'k',d:1};
-try{const gsv=JSON.parse(localStorage.getItem('logcft_gsort_v1')||'null'); if(gsv&&['k','n','c'].indexOf(gsv.k)>-1) GSORT={k:gsv.k,d:gsv.d===-1?-1:1}}catch(e){}
+var GSORT={k:'k',d:1,by:'len'};
+try{const gsv=JSON.parse(localStorage.getItem('logcft_gsort_v1')||'null'); if(gsv&&['k','n','c'].indexOf(gsv.k)>-1) GSORT={k:gsv.k,d:gsv.d===-1?-1:1,by:gsv.by==='girth'?'girth':'len'}}catch(e){}
+function gByGirth(){return MODE==='round'&&GSORT.by==='girth'}
 function gHeads(){
   const r=MODE==='round';
-  const lab={k:r?'Length':'Size',n:'Logs',c:r?'CBM':'CFT'}, ids={k:'grp-h1',n:'grp-h2',c:'grp-h3'};
+  const gg=gByGirth(), lab={k:r?(gg?'Girth':'Length'):'Size',n:'Logs',c:r?'CBM':'CFT'}, ids={k:'grp-h1',n:'grp-h2',c:'grp-h3'};
   Object.keys(ids).forEach(k=>{
     const el=document.getElementById(ids[k]); if(!el) return;
     el.textContent=lab[k]+(GSORT.k===k?(GSORT.d===1?' \u25B2':' \u25BC'):'');
@@ -1049,20 +1096,28 @@ function gHeads(){
     el.setAttribute('role','button'); el.setAttribute('tabindex','0');
     el.title='Tap to sort';
   });
-  const sl={k:r?'length':'size',n:'logs',c:r?'CBM':'CFT'}, sb={k:'gs-k',n:'gs-n',c:'gs-c'};
+  const sl={k:r?'length':'size',n:'logs',c:r?'CBM':'CFT'}, sb={k:'gs-k',c:'gs-c'};
   Object.keys(sb).forEach(k=>{
     const b=document.getElementById(sb[k]); if(!b) return;
-    b.textContent='Sort by '+sl[k]+(GSORT.k===k?(GSORT.d===1?' \u25B2':' \u25BC'):'');
-    b.className=GSORT.k===k?'':'alt';
+    const on=GSORT.k===k&&(k!=='k'||!r||!gg);
+    b.textContent='Sort by '+sl[k]+(on?(GSORT.d===1?' \u25B2':' \u25BC'):'');
+    b.className=on?'':'alt';
   });
+  const gbtn=document.getElementById('gs-g');
+  if(gbtn){
+    gbtn.style.display=r?'':'none';
+    const on2=r&&gg&&GSORT.k==='k';
+    gbtn.textContent='Sort by girth'+(on2?(GSORT.d===1?' \u25B2':' \u25BC'):'');
+    gbtn.className=on2?'':'alt';
+  }
 }
 // Length ranges for the "By length" table (kept separately for each sheet type)
 var GR_DATA=null;
 function grAll(){
-  if(!GR_DATA){GR_DATA={sawn:[],round:[]}; try{const v=JSON.parse(localStorage.getItem('logcft_grange_v1')||'null'); if(v&&typeof v==='object'){['sawn','round'].forEach(m=>{if(Array.isArray(v[m])) GR_DATA[m]=v[m].map(r=>({f:String((r&&r.f)||''),t:String((r&&r.t)||'')}))})}}catch(e){}}
+  if(!GR_DATA){GR_DATA={sawn:[],round:[],girth:[]}; try{const v=JSON.parse(localStorage.getItem('logcft_grange_v1')||'null'); if(v&&typeof v==='object'){['sawn','round','girth'].forEach(m=>{if(Array.isArray(v[m])) GR_DATA[m]=v[m].map(r=>({f:String((r&&r.f)||''),t:String((r&&r.t)||'')}))})}}catch(e){}}
   return GR_DATA;
 }
-function grList(){const a=grAll(); return a[MODE==='round'?'round':'sawn']}
+function grList(){const a=grAll(); return a[MODE==='round'?(gByGirth()?'girth':'round'):'sawn']}
 function grSave(){try{localStorage.setItem('logcft_grange_v1',JSON.stringify(grAll()))}catch(e){}}
 function grInR(v,r){
   let f=parseFloat(String(r.f).replace(',','.')), t=String(r.t).trim()===''?Infinity:parseFloat(String(r.t).replace(',','.'));
@@ -1070,12 +1125,12 @@ function grInR(v,r){
   return v>=f-1e-9&&v<=t+1e-9;
 }
 function grLabel(r){
-  const f=String(r.f).trim()||'0', t=String(r.t).trim(), u=MODE==='round'?' m':' x';
+  const f=String(r.f).trim()||'0', t=String(r.t).trim(), u=MODE==='round'?(gByGirth()?' cm':' m'):' x';
   return t?f+' - '+t+u:f+' upper'+u;
 }
 function gRowsHtml(g,gks){
   const rg=grList(), r=MODE==='round';
-  const row=k=>'<tr><td>'+(r?parseFloat(k)+' m':k+' x')+'</td><td>'+g[k].n+'</td><td>'+fmtVal(g[k].c)+'</td></tr>';
+  const gg=gByGirth(), row=k=>'<tr><td>'+(r?(gg?parseFloat(k)+' cm':parseFloat(k)+' m'):k+' x')+'</td><td>'+g[k].n+'</td><td>'+fmtVal(g[k].c)+'</td></tr>';
   if(!rg.length) return gks.map(row).join('');
   const buckets=rg.map(x=>({label:grLabel(x),keys:[]})), other=[];
   gks.forEach(k=>{
@@ -1096,15 +1151,18 @@ function gRowsHtml(g,gks){
 }
 function grRender(){
   const box=document.getElementById('grp-ranges'); if(!box) return;
-  const rg=grList(), u=MODE==='round'?'m':'';
-  box.innerHTML=rg.length?'<div class="sub" style="font-size:.8rem;margin:0 0 4px">Length Range'+(u?' ('+u+')':'')+'</div>'+rg.map((x,i)=>
+  const rg=grList(), gg=gByGirth(), u=MODE==='round'?(gg?'cm':'m'):'';
+  box.innerHTML=rg.length?'<div class="sub" style="font-size:.8rem;margin:0 0 4px">'+(gg?'Girth':'Length')+' Range'+(u?' ('+u+')':'')+'</div>'+rg.map((x,i)=>
     '<div style="display:grid;grid-template-columns:1fr 1fr 46px;gap:8px;margin:0 0 8px">'
     +'<input type="text" inputmode="decimal" autocomplete="off" data-i="'+i+'" data-k="f" value="'+esc(x.f)+'" placeholder="From" aria-label="From length" style="min-height:46px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;width:100%;box-sizing:border-box">'
     +'<input type="text" inputmode="decimal" autocomplete="off" data-i="'+i+'" data-k="t" value="'+esc(x.t)+'" placeholder="To (khali = upper)" aria-label="To length" style="min-height:46px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;width:100%;box-sizing:border-box">'
     +'<button type="button" data-x="'+i+'" aria-label="Remove range" class="alt" style="min-height:46px;padding:0;color:var(--bad)">x</button></div>').join(''):'';
 }
-function gSortBy(k){
-  if(GSORT.k===k) GSORT.d=-GSORT.d; else GSORT={k:k,d:1};
+function gSortBy(k,by){
+  by=by||(k==='k'?'len':GSORT.by);
+  if(MODE!=='round') by='len';
+  if(GSORT.k===k&&GSORT.by===by) GSORT.d=-GSORT.d; else GSORT={k:k,d:1,by:by};
+  try{grRender()}catch(e){}
   try{localStorage.setItem('logcft_gsort_v1',JSON.stringify(GSORT))}catch(e){}
   update();
 }
@@ -1146,7 +1204,7 @@ function update(){
   const g={};
   getList().forEach(v=>{
     const c=calc(v); if(c===null) return;
-    const key=MODE==='round'? roundVol(v).m.toFixed(2) : parseSize(v).a;
+    const key=MODE==='round'? (gByGirth()? String(+roundVol(v).g.toFixed(2)) : roundVol(v).m.toFixed(2)) : parseSize(v).a;
     (g[key]=g[key]||{n:0,c:0}).n++; g[key].c+=c;
   });
   const gks=Object.keys(g).sort((x,y)=>{
@@ -1169,12 +1227,14 @@ function sortKey(v){
   const p=parseSize(v); if(!p) return [1e9,0,0];
   return [p.a,p.b,lengthFt(p.code)];
 }
-function sortRows(){
+function sortRows(by){
   const l=[...rows.querySelectorAll('tr')].map(tr=>({v:normalize(tr.querySelector('input').value),sc:tr.dataset.sc||'',sr:tr.dataset.sr||''})).filter(x=>x.v);
-  l.sort((x,y)=>sortKey(x.v)[0]-sortKey(y.v)[0]); // first number only, rest keeps original order
+  if(by==='girth'&&MODE==='round') l.sort((x,y)=>{const a=sortKey(x.v),b=sortKey(y.v); return (a[1]-b[1])||(a[0]-b[0])}); // girth, then length
+  else l.sort((x,y)=>sortKey(x.v)[0]-sortKey(y.v)[0]); // first number only, rest keeps original order
   rows.innerHTML=''; l.forEach(x=>{const tr=addRow(x.v); if(x.sc) tr.dataset.sc=x.sc; if(x.sr) tr.dataset.sr=x.sr}); update();
 }
-document.getElementById('sort').onclick=sortRows;
+document.getElementById('sort').onclick=()=>sortRows();
+document.getElementById('sort-g').onclick=()=>sortRows('girth');
 document.getElementById('grp-ranges').addEventListener('input',e=>{
   const i=e.target.getAttribute('data-i'), k=e.target.getAttribute('data-k'); if(i===null) return;
   grList()[+i][k]=e.target.value; grSave(); update();
@@ -1185,15 +1245,16 @@ document.getElementById('grp-ranges').addEventListener('click',e=>{
 });
 document.getElementById('gr-add').onclick=()=>{
   const l=grList(), last=l[l.length-1], lt=last&&String(last.t).trim()?parseFloat(String(last.t).replace(',','.')):NaN;
-  l.push({f:isNaN(lt)?'':String(Math.round((lt+(MODE==='round'?0.05:0.25))*100)/100),t:''});
+  l.push({f:isNaN(lt)?'':String(Math.round((lt+(MODE==='round'?(gByGirth()?10:0.05):0.25))*100)/100),t:''});
   grSave(); grRender(); update();
 };
 document.getElementById('gr-clear').onclick=()=>{grList().length=0; grSave(); grRender(); update()};
-[['gs-k','k'],['gs-n','n'],['gs-c','c']].forEach(a=>{document.getElementById(a[0]).onclick=()=>gSortBy(a[1])});
+[['gs-k','k'],['gs-c','c']].forEach(a=>{document.getElementById(a[0]).onclick=()=>gSortBy(a[1])});
+{const gb=document.getElementById('gs-g'); if(gb) gb.onclick=()=>gSortBy('k','girth')}
 [['grp-h1','k'],['grp-h2','n'],['grp-h3','c']].forEach(a=>{
   const el=document.getElementById(a[0]);
-  el.addEventListener('click',()=>gSortBy(a[1]));
-  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();gSortBy(a[1])}});
+  el.addEventListener('click',()=>gSortBy(a[1],a[1]==='k'?GSORT.by:undefined));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();gSortBy(a[1],a[1]==='k'?GSORT.by:undefined)}});
 });
 let xPos=-1;
 document.getElementById('xchk-go').onclick=()=>{
@@ -1249,6 +1310,129 @@ document.getElementById('print').onclick=()=>{
 
 
 const file=document.getElementById('file'), prev=document.getElementById('prev'), st=document.getElementById('status');
+// ---------- Import sizes from Excel (.xlsx/.csv) and text PDF ----------
+// Length 260 -> default length 2 m, row "60x52"; 360 -> default length 3 m, row "60x54". Each Excel sheet becomes its own saved file.
+const IMP_RE=/\.(xlsx|xlsm|xls|csv|pdf)$/i, SHEETJS='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js', PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+async function zipRead(buf){
+  const dv=new DataView(buf), u=new Uint8Array(buf); let e=u.length-22;
+  while(e>=0&&dv.getUint32(e,true)!==0x06054b50) e--;
+  if(e<0) throw new Error('Not a valid .xlsx file');
+  const n=dv.getUint16(e+10,true); let p=dv.getUint32(e+16,true); const ent={};
+  for(let i=0;i<n;i++){
+    const nl=dv.getUint16(p+28,true), xl=dv.getUint16(p+30,true), cl=dv.getUint16(p+32,true);
+    ent[new TextDecoder().decode(u.subarray(p+46,p+46+nl))]={m:dv.getUint16(p+10,true),cs:dv.getUint32(p+20,true),lo:dv.getUint32(p+42,true)};
+    p+=46+nl+xl+cl;
+  }
+  return async name=>{
+    const z=ent[name]; if(!z) throw new Error('Missing '+name);
+    const s=z.lo+30+dv.getUint16(z.lo+26,true)+dv.getUint16(z.lo+28,true), d=u.subarray(s,s+z.cs);
+    if(z.m===0) return new TextDecoder().decode(d);
+    if(typeof DecompressionStream==='undefined') throw new Error('This browser cannot open Excel files. Update the browser.');
+    return new TextDecoder().decode(await new Response(new Blob([d]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  };
+}
+const xmlDoc=t=>new DOMParser().parseFromString(t,'application/xml');
+function colIdx(ref){let n=0;for(const ch of /^[A-Z]+/.exec(ref)[0]) n=n*26+ch.charCodeAt(0)-64; return n-1}
+async function xlsxSheets(buf){
+  const z=await zipRead(buf), wb=xmlDoc(await z('xl/workbook.xml')), rl=xmlDoc(await z('xl/_rels/workbook.xml.rels')), rel={};
+  [...rl.getElementsByTagName('Relationship')].forEach(r=>rel[r.getAttribute('Id')]=r.getAttribute('Target'));
+  let ss=[]; try{ss=[...xmlDoc(await z('xl/sharedStrings.xml')).getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join(''))}catch(e){}
+  const out=[];
+  for(const s of wb.getElementsByTagName('sheet')){
+    const tg=(rel[s.getAttribute('r:id')]||'').replace(/^\//,''), sh=xmlDoc(await z(tg.indexOf('xl/')===0?tg:'xl/'+tg)), grid=[];
+    [...sh.getElementsByTagName('row')].forEach(r=>{const a=[];
+      [...r.getElementsByTagName('c')].forEach(c=>{const v=c.getElementsByTagName('v')[0], t=c.getAttribute('t');
+        a[colIdx(c.getAttribute('r'))]= t==='s'&&v ? ss[+v.textContent] : t==='inlineStr' ? c.textContent : v ? v.textContent : null});
+      grid.push(a)});
+    out.push({name:s.getAttribute('name'),grid});
+  }
+  return out;
+}
+// rows of cells -> [[length cm, girth cm], ...]; uses the "Length"/"Girth" headings when present
+function gridPairs(grid){
+  const num=v=>{const n=parseFloat(String(v==null?'':v).replace(/,/g,''));return isNaN(n)?null:n};
+  let hi=-1,lc=-1,gc=-1;
+  for(let i=0;i<Math.min(grid.length,30)&&hi<0;i++){
+    lc=gc=-1; (grid[i]||[]).forEach((v,j)=>{const s=String(v||'').toLowerCase(); if(lc<0&&/length/.test(s)) lc=j; if(gc<0&&/girth/.test(s)) gc=j});
+    if(lc>=0&&gc>=0) hi=i;
+  }
+  const out=[];
+  grid.forEach((r,i)=>{
+    if(!r||i<=hi) return; let L=null,G=null;
+    if(hi>=0){L=num(r[lc]);G=num(r[gc])}
+    else{const ns=r.map(num).filter(x=>x!==null); if(ns.length>=3){L=ns[1];G=ns[2]} else if(ns.length===2){L=ns[0];G=ns[1]}}
+    if(L===null||G===null) return;
+    if(L<20) L*=100;   // length given in metres
+    if(L>=30&&L<=1500&&G>=10&&G<=500) out.push([Math.round(L),G]);
+  });
+  return out;
+}
+function impBase(){return Math.floor(fixedLenM())||2}
+function domBase(pairs){const c={}; pairs.forEach(p=>{const w=Math.floor(p[0]/100); c[w]=(c[w]||0)+1}); return +Object.keys(c).sort((a,b)=>c[b]-c[a])[0]}
+function pairsToRows(pairs,base){return pairs.map(([L,G])=>(Math.floor(L/100)===base?String(L-base*100).padStart(2,'0'):String(L))+'x'+G)}
+async function pdfPairs(buf){
+  if(!window.pdfjsLib){
+    await loadScript(PDFJS+'pdf.min.js');
+    const w=await (await fetch(PDFJS+'pdf.worker.min.js')).text();
+    pdfjsLib.GlobalWorkerOptions.workerSrc=URL.createObjectURL(new Blob([w],{type:'text/javascript'}));
+  }
+  const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise, pairs=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const tc=await (await doc.getPage(p)).getTextContent(), lines={};
+    tc.items.forEach(it=>{if(it.str.trim()){const y=Math.round(it.transform[5]/3); (lines[y]=lines[y]||[]).push([it.transform[4],it.str.trim()])}});
+    Object.keys(lines).map(Number).sort((a,b)=>b-a).forEach(y=>{
+      const txt=lines[y].sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join(' '), m=[...txt.matchAll(/(\d{2,4})\s*[x×*]\s*(\d{2,3})(?!\d)/gi)];
+      if(m.length) m.forEach(k=>{let L=+k[1]; if(L<100) L=impBase()*100+L; pairs.push([L,+k[2]])});
+      else pairs.push(...gridPairs([txt.split(/\s+/)]));
+    });
+  }
+  return pairs;
+}
+// Old Excel 97-2003 (.xls): read with SheetJS (loaded once from the internet)
+async function xlsSheets(buf){
+  if(!window.XLSX) await loadScript(SHEETJS);
+  const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+  return wb.SheetNames.map(n=>({name:n,grid:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null})}));
+}
+async function importDocs(files){
+  if(!requireActive()) return;
+  const all=[]; let note='';
+  for(const f of files){
+    try{
+      st.textContent='Reading '+f.name+'...';
+      const bn=f.name.replace(/\.[^.]+$/,''), buf=await f.arrayBuffer();
+      if(/\.pdf$/i.test(f.name)||f.type==='application/pdf') all.push({name:bn,pairs:await pdfPairs(buf)});
+      else if(/\.csv$/i.test(f.name)) all.push({name:bn,pairs:gridPairs(new TextDecoder().decode(buf).split(/\r?\n/).map(l=>l.split(/[,;\t]/)))});
+      else (/\.xls$/i.test(f.name)?await xlsSheets(buf):await xlsxSheets(buf)).forEach(s=>all.push({name:(files.length>1?bn+' - ':'')+s.name,pairs:gridPairs(s.grid)}));
+    }catch(e){note+=' '+f.name+': '+(e.message||'could not be read')+'.'}
+  }
+  const good=all.filter(s=>s.pairs.length);
+  if(!good.length){st.innerHTML='<span class="err">No length x girth sizes found.'+esc(note)+' (A scanned PDF has no text - add it as a photo instead.)</span>';return}
+  const base=domBase(good[0].pairs);
+  RS.len=String(base); RS.lu='m'; RS.gu='cm';
+  const li=document.getElementById('rs-len'); li.value=RS.len; document.getElementById('rs-lu').value='m'; document.getElementById('rs-gu').value='cm'; li.dispatchEvent(new Event('change'));
+  const f=readFiles(), names=[]; let logs=0, cutIt=false;
+  good.forEach(s=>{
+    let n=s.name.slice(0,60),k=2; while(f[n]) n=s.name.slice(0,56)+' ('+(k++)+')';
+    let pr=s.pairs; if(freeLimited()){const room=Math.max(0,FREE_MAX-dailyUsed()); if(pr.length>room){pr=pr.slice(0,room);cutIt=true} dailyAdd(pr.length); if(!pr.length){cutIt=true;return}}
+    f[n]={rows:pairsToRows(pr,base),updated:Date.now(),mode:'round'}; names.push(n); logs+=pr.length;
+  });
+  if(!names.length){showLimit();return}
+  if(!writeFiles(f)) return;
+  renderFiles();
+  if(cutIt) setTimeout(showLimit,600);
+  await openFile(names[0]);
+  st.innerHTML='Imported <strong>'+logs+'</strong> logs in <strong>'+names.length+'</strong> sheet'+(names.length>1?'s (each saved as a separate file - open them from Files): ':': ')+esc(names.slice(0,8).join(', '))+(names.length>8?' ...':'')+'. Default length '+base+' m.'+esc(note);
+}
+file.addEventListener('change',e=>{
+  const docs=[...file.files].filter(f=>IMP_RE.test(f.name)||f.type==='application/pdf');
+  if(!docs.length) return;
+  e.stopImmediatePropagation(); file.value=''; importDocs(docs);
+},true);
+{const fd=document.getElementById('file-doc'); if(fd) fd.addEventListener('change',()=>{
+  const docs=[...fd.files].filter(f=>IMP_RE.test(f.name)||f.type==='application/pdf');
+  fd.value=''; if(docs.length) importDocs(docs);
+});}
 // ---------- Share the measurement sheet as a PDF (WhatsApp) ----------
 const HW='278 278 355 556 556 889 667 191 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 278 278 584 584 584 556 1015 667 667 722 722 667 611 778 722 278 500 667 556 833 722 778 667 778 722 667 611 722 667 944 667 667 611 278 278 278 469 556 333 556 556 500 556 556 278 556 556 222 222 500 222 833 556 556 556 556 333 500 278 556 500 722 500 500 500 334 260 334 584'.split(' ').map(Number), HBW='278 333 474 556 556 889 722 238 333 333 389 584 278 333 278 278 556 556 556 556 556 556 556 556 556 556 333 333 584 584 584 611 975 722 722 722 722 667 611 778 722 278 556 722 611 833 722 778 667 778 722 667 611 722 667 944 667 667 611 333 278 333 584 556 333 556 611 556 611 556 333 611 611 278 278 556 278 889 611 611 611 611 389 556 333 611 556 778 556 556 500 389 280 389 584'.split(' ').map(Number);
 function makeSheetPdf(){
@@ -1299,7 +1483,7 @@ function makeSheetPdf(){
       const g='Total '+(round?'CBM':'CFT')+': '+fmtVal(grand)+'   ('+l.length+' logs)'+(round?'   CFT: '+(grand*CFT_PER_CBM).toFixed(2):'');
       T(W/2,top+2*HH+per*RH+26,g,13,true,'c');
     }
-    pdfPages.push(c+promoPdf(W,H));
+    pdfPages.push(wmPdf(W,H)+c+promoPdf(W,H));
   }
   // assemble PDF
   const objs=[]; const add=t=>{objs.push(t);return objs.length};
@@ -1321,6 +1505,19 @@ function makeSheetPdf(){
   const bytes=new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
   return {blob:new Blob([bytes],{type:'application/pdf'}), total:grand, count:l.length};
 }
+// ---------- Native Android: share a file (WhatsApp, Drive, Files...) and print ----------
+window.NativeShare=async function(blob,name,mime,text){
+  try{
+    var P=(window.Capacitor&&Capacitor.Plugins)||{}; if(!P.Filesystem||!P.Share) return false;
+    var buf=new Uint8Array(await blob.arrayBuffer()), bin='', CH=0x8000;
+    for(var i=0;i<buf.length;i+=CH) bin+=String.fromCharCode.apply(null,buf.subarray(i,i+CH));
+    await P.Filesystem.writeFile({path:name,data:btoa(bin),directory:'CACHE'});
+    var u=await P.Filesystem.getUri({path:name,directory:'CACHE'});
+    await P.Share.share({title:name,text:text||'',url:u.uri,dialogTitle:'Send / save'});
+    return true;
+  }catch(e){ return !!(e&&/cancel/i.test(String(e.message||e))); }
+};
+(function(){ if(window.AndroidPrint){ window.print=function(){ try{window.dispatchEvent(new Event('beforeprint'))}catch(e){} window.AndroidPrint.print(); }; } })();
 function pvSay(t,bad){const pm=document.getElementById('pv-msg'); if(pm) pm.innerHTML=bad?'<span class="err">'+esc(t)+'</span>':esc(t)}
 async function shareSawnPdf(){
   if(!getList().length){st.innerHTML='<span class="err">Add some sizes first.</span>';pvSay('Add some sizes first.',true);return}
@@ -1331,6 +1528,7 @@ async function shareSawnPdf(){
   const fname=base+'.pdf', file=new File([r.blob],fname,{type:'application/pdf'});
   const text=(MODE==='round'?'Round log sheet':'Log sheet')+' - '+r.count+' logs, Total '+(MODE==='round'?'CBM ':'CFT ')+fmtVal(r.total);
   try{
+    if(await NativeShare(r.blob,fname,'application/pdf',text)) return;
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       await navigator.share({files:[file],title:fname,text:text});
       return;
@@ -1375,6 +1573,11 @@ function normAi(parsed){
 // Puts the sizes into the table (after the rows already there) and returns the new rows
 function appendRows(res,phNo){
   [...rows.querySelectorAll('tr')].forEach(tr=>{ if(!tr.querySelector('input').value.trim()) tr.remove() });
+  if(freeLimited()){
+    const room=Math.max(0,FREE_MAX-dailyUsed());
+    if(res.arr.length>room){ res=Object.assign({},res,{arr:res.arr.slice(0,room),sc:(res.sc||[]).slice(0,room),sr:(res.sr||[]).slice(0,room)}); setTimeout(showLimit,300) }
+    dailyAdd(res.arr.length);
+  }
   const trs=res.arr.map((sz,i)=>{const tr=addRow(esc(String(sz))); if(res.sc[i]) tr.dataset.sc=res.sc[i]; tr.dataset.sr=res.sr[i]; if(phNo) tr.dataset.ph=phNo; return tr});
   update(); return trs;
 }
@@ -1454,6 +1657,10 @@ file.onchange=()=>{
   renderPhotos();
   if(PHOTOS.length){const l=PHOTOS[PHOTOS.length-1]; prev.src=l.url; prev.hidden=false}
 };
+{const fc=document.getElementById('file-cam'), cb=document.getElementById('cam-btn');
+  if(cb&&fc){ cb.onclick=()=>fc.click();
+    fc.onchange=()=>{[...fc.files].forEach(addPhoto); fc.value=''; renderPhotos();
+      if(PHOTOS.length){const l=PHOTOS[PHOTOS.length-1]; prev.src=l.url; prev.hidden=false}}; }}
 document.getElementById('photos').addEventListener('click',e=>{
   const v=e.target.closest('[data-view]'), d=e.target.closest('[data-del]'), c=e.target.closest('#ph-clear');
   if(v){const p=PHOTOS.find(x=>x.id==v.getAttribute('data-view')); if(p){prev.src=p.url;prev.hidden=false;prev.scrollIntoView({block:'nearest'})}}
@@ -1870,6 +2077,13 @@ document.getElementById('mi-theme').onclick=()=>{closeMenus();renderSwatches();d
 
 // Free plan (Android app): a small "ad-free" line at the bottom of printed sheets, previews and PDFs
 function freePromoText(){ try{ return (window.NATIVE&&!(window.LogAds&&LogAds.isPremium()))?'Free version  |  Subscribe to Premium for an ad-free version  |  Log CFT/CBM Calculator':'' }catch(e){return ''} }
+// Free plan: "Log CFT/CBM Calculator" watermark repeated over the whole PDF page (drawn first, so the table stays readable)
+function wmPdf(W,H){
+  if(!freePromoText()) return '';
+  const t='Log CFT/CBM Calculator', a=Math.PI/6, c=Math.cos(a).toFixed(4), s=Math.sin(a).toFixed(4); let o='q 0.88 g\n', r=0;
+  for(let y=-40;y<H+60;y+=140,r++) for(let x=(r%2?-60:60);x<W+40;x+=250) o+='BT /F2 22 Tf '+c+' '+s+' -'+s+' '+c+' '+x+' '+y+' Tm ('+t+') Tj ET\n';
+  return o+'Q\n';
+}
 function promoPdf(W,H){
   const t=freePromoText(); if(!t) return '';
   const sz=8; let w=0; for(const ch of t){const k=ch.charCodeAt(0)-32; w+=(k>=0&&k<95?HW[k]:556)/1000} w*=sz;
@@ -1877,6 +2091,7 @@ function promoPdf(W,H){
 }
 (function(){
   let pp=document.getElementById('print-promo'); if(!pp){pp=document.createElement('div');pp.id='print-promo';document.body.appendChild(pp)}
+  if(!document.getElementById('print-wm')){const w=document.createElement('div');w.id='print-wm';document.body.appendChild(w)}
   window.addEventListener('beforeprint',()=>{const t=freePromoText(); pp.textContent=t; document.body.classList.toggle('free-print',!!t)});
   window.addEventListener('afterprint',()=>document.body.classList.remove('free-print'));
 })();
@@ -1893,7 +2108,7 @@ function showPreview(){   // Free plan (Android app): one full-screen ad, then t
 function showPreviewNow(){
   pvSay('');
   document.getElementById('pv-sheet').innerHTML=document.getElementById('sheet').innerHTML;
-  {const pv=document.getElementById('pv-promo'), t=freePromoText(); pv.textContent=t; pv.hidden=!t}
+  {const pv=document.getElementById('pv-promo'), t=freePromoText(); pv.textContent=t; pv.hidden=!t; document.getElementById('pv-wm').classList.toggle('on',!!t)}
   const dlg=document.getElementById('dlg-preview'); if(!dlg.open) dlg.showModal();
   fitPreview(); requestAnimationFrame(fitPreview);
 }
@@ -2146,7 +2361,7 @@ function pdfFromPages(pages,W,H){
   add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   const kids=[];
   pages.forEach(cs0=>{
-    const cs=cs0+promoPdf(W,H);
+    const cs=wmPdf(W,H)+cs0+promoPdf(W,H);
     const cid=objs.length+2;
     kids.push(add('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+cid+' 0 R >>')+' 0 R');
     add('<< /Length '+cs.length+' >>\nstream\n'+cs+'endstream');
@@ -2216,6 +2431,7 @@ async function shareFixPdf(){
   const file=new File([blob],pdfName,{type:'application/pdf'});
   const text=(FX.title?FX.title+' - ':'')+(FX.party?FX.party+' - ':'')+'Total PCS '+d.gp+', CFT '+d.gc.toFixed(2);
   try{
+    if(await NativeShare(blob,pdfName,'application/pdf',text)) return;
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:pdfName,text:text});return}
     throw new Error('noshare');
   }catch(e){
@@ -2272,9 +2488,10 @@ function applyMode(){
   document.getElementById('th-val').textContent=r?'CBM':'CFT';
   document.getElementById('tot-label').textContent=r?'Total CBM':'Total CFT';
   document.getElementById('grp-title').textContent='Sort';
-  document.getElementById('grp-h1').textContent=r?'Length':'Size';
+  document.getElementById('grp-h1').textContent=r?(gByGirth()?'Girth':'Length'):'Size';
   document.getElementById('grp-h3').textContent=r?'CBM':'CFT';
   document.getElementById('sort').textContent=r?'Sort by length':'Sort by first number';
+  document.getElementById('sort-g').style.display=r?'':'none';
 }
 function setMode(m){
   MODE=(m==='round'||m==='fix')?m:'sawn';
@@ -2325,6 +2542,9 @@ function updateDaysBadge(){
 setInterval(()=>{try{refreshAct()}catch(e){}},600000);                      // keeps the count right across midnight
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){try{refreshAct()}catch(e){}}});
 function requireActive(){ return !BLOCKED }
+{const lp=document.getElementById('lm-plans'); if(lp) lp.onclick=()=>{location.href='plans.html'}}
+try{freeLeftLabel(); setTimeout(freeLeftLabel,1500); setTimeout(freeLeftLabel,6000)}catch(e){}
+document.addEventListener('visibilitychange',()=>{try{freeLeftLabel()}catch(e){}});
 document.getElementById('mi-plans').onclick=()=>{closeMenus();location.href='plans.html'};
 document.getElementById('mi-about').onclick=()=>{closeMenus();refreshAct();document.getElementById('dlg-about').showModal()};
 refreshAct();
@@ -2676,7 +2896,7 @@ setTimeout(go,1800);})();
   }
   [['mf-title','title'],['mf-truck','truck'],['mf-date','date']].forEach(function(p){
     $(p[0]).addEventListener('input',function(){ST[p[1]]=this.value;persist()})});
-  $('mi-merge').onclick=function(){closeMenus();loadHead();mfRenderFiles();$('dlg-merge').showModal()};
+  $('mi-merge').onclick=function(){closeMenus(); if(window.NATIVE&&window.LogAds&&!LogAds.isPremium()){showLimit('merge');return} loadHead();mfRenderFiles();$('dlg-merge').showModal()};
   mfRenderFiles();
 })();
 </script>
@@ -2907,7 +3127,7 @@ setTimeout(go,1800);})();
   function report(extra){
     try{
       refreshAct();
-      var o={id:getDeviceId(),lastSeen:Date.now(),firstSeen:firstSeen(),ver:VER};
+      var o={id:getDeviceId(),lastSeen:Date.now(),firstSeen:firstSeen(),ver:VER}; if(window.NATIVE) o.app='android';   // marks Play-app devices in the key generator
       if(FP) o.fp=FP;
       var em0=getEmail(); if(em0) o.email=em0;
       if(extra) for(var k in extra) o[k]=extra[k];
@@ -3162,8 +3382,10 @@ setTimeout(go,1800);})();
       names.sort();while(names.length>KEEP){await h.removeEntry(names.shift())}}catch(e){}
   }
   function download(name,text){
-    var b=new Blob([text],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');
-    a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000);
+    var b=new Blob([text],{type:'application/json'});
+    function plain(){var u=URL.createObjectURL(b),a=document.createElement('a');
+      a.href=u;a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove();URL.revokeObjectURL(u)},4000);}
+    if(window.NativeShare){ window.NativeShare(b,name,'application/json','Log CFT-CBM backup').then(function(ok){if(!ok)plain()}); } else plain();
   }
   function record(){var c=cfg();c.last=Date.now();c.snooze=0;put(c)}
   // ----- backup -----
@@ -3550,7 +3772,7 @@ setTimeout(go,1800);})();
     if(!l.length)return null;
     var round=MODE==='round',rg=grList(),logs=[];
     l.forEach(function(v){
-      if(round){var r=roundVol(v);if(r)logs.push({key:r.m,cft:r.cft,cbm:r.cbm})}
+      if(round){var r=roundVol(v);if(r)logs.push({key:gByGirth()?r.g:r.m,cft:r.cft,cbm:r.cbm})}
       else{var p=parseSize(v),c=calc(v);if(p&&c!==null)logs.push({key:p.a,size:p.a+'x'+p.b,a:p.a,b:p.b,cft:c,cbm:0})}});
     if(!logs.length)return null;
     function sum(arr){var o={pcs:arr.length,cft:0,cbm:0};arr.forEach(function(x){o.cft+=x.cft;o.cbm+=x.cbm});return o}
@@ -3560,7 +3782,7 @@ setTimeout(go,1800);})();
       var bk=rg.map(function(x){return {label:grLabel(x),arr:[]}}),other=[];
       logs.forEach(function(x){var ok=false;for(var i=0;i<rg.length;i++){if(grInR(x.key,rg[i])){bk[i].arr.push(x);ok=true;break}}if(!ok)other.push(x)});
       if(other.length)bk.push({label:'Other',arr:other});
-      modes.range={label:'Range-wise (own rate for each range)',items:bk.filter(function(b){return b.arr.length}).map(function(b){var s=sum(b.arr);return {d:name+' ('+(round?'length ':'size ')+b.label+')',hsn:hsn,pcs:s.pcs,cft:s.cft,cbm:s.cbm,per:per}})};
+      modes.range={label:'Range-wise (own rate for each range)',items:bk.filter(function(b){return b.arr.length}).map(function(b){var s=sum(b.arr);return {d:name+' ('+(round?(gByGirth()?'girth ':'length '):'size ')+b.label+')',hsn:hsn,pcs:s.pcs,cft:s.cft,cbm:s.cbm,per:per}})};
     }
     if(round){
       var g={};logs.forEach(function(x){var k=x.key.toFixed(2);(g[k]=g[k]||[]).push(x)});
