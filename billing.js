@@ -1,8 +1,8 @@
-// Google Play subscriptions in the Android app (cordova-plugin-purchase).
+// Google Play purchases in the Android app (cordova-plugin-purchase): Premium = subscription, AI packs = one-time products that can be bought again.
 // Used by plans.html (buy / restore) and ads.js (quiet re-check of renewals).
 (function () {
   var C = window.LOGCFT || {}, P = C.products || {};
-  P.prem = P.prem || 'premium_monthly'; P.aiBasic = P.aiBasic || 'ai_basic_yearly'; P.aiStandard = P.aiStandard || 'ai_standard_yearly'; P.aiPremium = P.aiPremium || 'ai_premium_yearly';
+  P.prem = P.prem || 'premium_monthly'; P.aiBasic = P.aiBasic || 'ai_basic_pack'; P.aiStandard = P.aiStandard || 'ai_standard_pack'; P.aiPremium = P.aiPremium || 'ai_premium_pack';
   var AI_IDS = [P.aiBasic, P.aiStandard, P.aiPremium];
   var W = (C.workerUrl || '').replace(/\/+$/, '');
   var S = { ready: false, store: null, plat: null, price: {}, err: '', onChange: null };
@@ -26,7 +26,8 @@
   async function verifyTx(t) {
     var tok = tokenOf(t); if (!tok || !W || !dev()) return false;
     var em = ''; try { em = localStorage.getItem('logcft_email_v1') || ''; } catch (e) {}
-    await api('/verify', { deviceId: dev(), purchaseToken: tok, email: em });
+    var pid = ''; try { pid = (t.products && t.products[0] && t.products[0].id) || (t.nativePurchase && (t.nativePurchase.productId || (t.nativePurchase.productIds || [])[0])) || ''; } catch (e) {}
+    await api('/verify', { deviceId: dev(), purchaseToken: tok, productId: pid, email: em });
     try { if (t.finish) await t.finish(); } catch (e) {}
     return true;
   }
@@ -41,12 +42,12 @@
       try {
         store.register([
           { id: P.prem, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
-          { id: P.aiBasic, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
-          { id: P.aiStandard, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
-          { id: P.aiPremium, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat }
+          { id: P.aiBasic, type: cp.ProductType.CONSUMABLE, platform: S.plat },
+          { id: P.aiStandard, type: cp.ProductType.CONSUMABLE, platform: S.plat },
+          { id: P.aiPremium, type: cp.ProductType.CONSUMABLE, platform: S.plat }
         ]);
         store.when().approved(function (t) {
-          verifyTx(t).then(function () { if (S.onChange) S.onChange('Done. Your plan is active.'); })
+          verifyTx(t).then(function () { if (S.onChange) S.onChange('Done. Your purchase is added.'); })
             .catch(function (e) { if (S.onChange) S.onChange('Purchase not completed: ' + (e.message || e)); });
         });
         await store.initialize([S.plat]);

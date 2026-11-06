@@ -1,7 +1,7 @@
 // AdMob banner for the Free plan (Android app only). Premium users see no ads.
 (function () {
   if (!window.NATIVE) return;
-  var C = window.LOGCFT || {}, A = C.admob || {}, PREMKEY = 'logcft_prem_until';
+  var C = window.LOGCFT || {}, A = C.admob || {}, PREMKEY = 'logcft_prem_until', AIKEY = 'logcft_ai_until';
   var plug = function () { return window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.AdMob; };
   var inited = false, visible = false, busy = false, hid = false;
 
@@ -76,13 +76,14 @@
     if (w && id) {
       try {
         var r = await fetch(w + '/status?deviceId=' + encodeURIComponent(id));
-        if (r.ok) { var j = await r.json(); localStorage.setItem(PREMKEY, String(j.premiumUntil || 0)); }
+        if (r.ok) { var j = await r.json(); localStorage.setItem(PREMKEY, String(j.premiumUntil || 0)); localStorage.setItem(AIKEY, String(j.aiUntil || 0)); }
       } catch (e) {}
     }
     update(); prepInt();
   }
   window.LogAds = {
     isPremium: premiumNow,
+    isAiActive: function () { try { return (+localStorage.getItem(AIKEY) || 0) > Date.now(); } catch (e) { return false; } },
     planText: function () { return premiumNow() ? '✓ Premium' : 'Free (ads)'; },
     refresh: refreshStatus, update: update, interstitial: showInterstitial
   };

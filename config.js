@@ -2,8 +2,8 @@
 window.LOGCFT = {
   // Your Cloudflare Worker address, e.g. https://logcft-api.yourname.workers.dev  (no slash at the end)
   workerUrl: 'https://logcft-api.greencheckinc.workers.dev',
-  // Subscription IDs: must be the same as in Play Console > Monetize > Subscriptions
-  products: { prem: 'premium_monthly', aiBasic: 'ai_basic_yearly', aiStandard: 'ai_standard_yearly', aiPremium: 'ai_premium_yearly' },
+  // Premium = subscription id (Play Console > Monetize > Subscriptions). AI packs = ONE-TIME product ids (Monetize > One-time products). Must be the same in Play Console and in the Worker.
+  products: { prem: 'premium_monthly', aiBasic: 'ai_basic_pack', aiStandard: 'ai_standard_pack', aiPremium: 'ai_premium_pack' },
   // AdMob. While testing keep testing:true and the Google test banner id.
   // For release: testing:false and your own banner Ad unit id (ca-app-pub-XXXX/YYYY)
   admob: { testing: true, bannerId: 'ca-app-pub-5053565897318981/3486515443', interstitialId: 'ca-app-pub-5053565897318981/2461208384' },

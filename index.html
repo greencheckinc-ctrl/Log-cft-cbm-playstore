@@ -558,7 +558,7 @@ html.locked body{overflow:hidden}
   <div class="menu">
     <button type="button" id="m-set" aria-haspopup="true" aria-expanded="false">Settings</button>
     <div class="dd" id="dd-set" role="menu">
-      <button type="button" role="menuitem" id="mi-plans">Plans &amp; Subscription...</button>
+      <button type="button" role="menuitem" id="mi-plans">Plans &amp; AI Packs...</button>
       <button type="button" role="menuitem" id="mi-about">App info...</button>
       <hr>
       <button type="button" role="menuitem" id="mi-theme">Theme colour...</button>
@@ -700,7 +700,7 @@ html.locked body{overflow:hidden}
   <div class="bd">
     <p id="lm-h" style="margin:0 0 8px;font-size:1.05rem;font-weight:700">You have used today’s 50 free entries.</p>
     <p id="lm-p" style="margin:0 0 6px;font-size:.92rem">The Free plan allows 50 new entries per day. Come back tomorrow, or subscribe to <b>Premium</b> for unlimited entries, Merge &amp; sort, no ads and no watermark.</p>
-    <p style="margin:0;font-size:.82rem;opacity:.8">An active AI plan also removes this limit.</p>
+    <p style="margin:0;font-size:.82rem;opacity:.8">An active AI pack also removes this limit.</p>
   </div>
   <div class="ft"><button type="button" class="alt" data-close>Not now</button><button type="button" id="lm-plans">See plans</button></div>
 </dialog>
@@ -1027,7 +1027,7 @@ function calcM(size,mode){
 function calc(size){return calcM(size,MODE)}
 const rows = document.getElementById('rows');
 function kpOn(){try{return localStorage.getItem('logcft_kp_v1')!=='sys'}catch(e){return true}}
-// Free plan (Android app): 50 new entries per day in total (all sheets), then a popup about Premium. Premium or an active AI plan has no limit. Merge & sort is Premium only.
+// Free plan (Android app): 50 new entries per day in total (all sheets), then a popup about Premium. Premium or an active AI pack has no limit. Merge & sort is Premium only.
 const FREE_MAX=50, DAYKEY='logcft_daily_v1';
 function freeLimited(){ try{ return !!(window.NATIVE&&window.LogAds&&!LogAds.isPremium()&&!(LogAds.isAiActive&&LogAds.isAiActive())) }catch(e){return false} }
 function dailyUsed(){ try{ const v=JSON.parse(localStorage.getItem(DAYKEY)||'null'); return (v&&v.d===today())?(+v.n||0):0 }catch(e){return 0} }
