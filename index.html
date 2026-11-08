@@ -942,12 +942,13 @@ html.locked body{overflow:hidden}
 
 <div class="box">
   <button type="button" id="grp-toggle" class="alt" aria-expanded="false" aria-controls="grp-body" style="display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;font-weight:700;font-size:1.1rem"><span id="grp-title">Sort</span><span id="grp-arrow" aria-hidden="true">&#9662;</span></button>
+<p id="grp-desc" style="margin:6px 2px 0;font-size:.8rem;line-height:1.35;color:var(--muted)">Group logs by size, add length/girth ranges, then print the sorted sheet with totals or generate a bill.</p>
 <div id="grp-body" hidden style="margin-top:10px">
   <div class="bar" id="grp-sortbar"><button type="button" id="gs-k">Sort by size</button><button type="button" id="gs-g" class="alt" style="display:none">Sort by girth</button><button type="button" id="gs-c" class="alt">Sort by CFT</button></div>
   <div id="grp-ranges"></div>
   <div class="bar" style="grid-template-columns:1fr 1fr"><button type="button" id="gr-add" class="alt">+ Range</button><button type="button" id="gr-clear" class="alt">Clear ranges</button></div>
   <table><thead><tr><th id="grp-h1">Size</th><th id="grp-h2">Logs</th><th id="grp-h3">CFT</th></tr></thead><tbody id="grp"></tbody></table>
-  <div class="bar" style="grid-template-columns:1fr"><button type="button" id="grp-bill">Generate bill</button></div>
+  <div class="bar" style="grid-template-columns:1fr 1fr"><button type="button" id="grp-print" class="alt">Print sheet</button><button type="button" id="grp-bill">Generate bill</button></div>
 </div>
 </div>
 <script>(function(){var t=document.getElementById("grp-toggle"),b=document.getElementById("grp-body"),r=document.getElementById("grp-arrow");t.addEventListener("click",function(){var o=b.hidden;b.hidden=!o;t.setAttribute("aria-expanded",String(o));r.innerHTML=o?"&#9652;":"&#9662;";});})();</script>
@@ -1306,7 +1307,7 @@ function grInR(v,r){
 }
 function grLabel(r){
   const f=String(r.f).trim()||'0', t=String(r.t).trim(), u=isR(MODE)?(gByGirth()?uGir():uLen()):' x';
-  return t?f+' - '+t+u:f+' upper'+u;
+  return t?f+' - '+t+u:f+u+' & UP';
 }
 function gRowsHtml(g,gks){
   const rg=grList(), r=isR(MODE);
@@ -1329,13 +1330,171 @@ function gRowsHtml(g,gks){
   });
   return h;
 }
+// ---------- Print sheet of the Sort table (sizes in the chosen sort order, totals per size, grand total) ----------
+var PV_KIND='sheet';
+function grItems(){
+  const gg=gByGirth(), r=isR(MODE), g={}; let N=0,S=0;
+  getList().forEach(v=>{
+    const c=calc(v); if(c===null) return;
+    const key=r?(gg?String(+roundVol(v).g.toFixed(2)):roundVol(v).m.toFixed(2)):parseSize(v).a;
+    const e=(g[key]=g[key]||{n:0,c:0,l:[]}); e.n++; e.c+=c; e.l.push({v:v,c:c}); N++; S+=c;
+  });
+  const gks=Object.keys(g).sort((x,y)=>{
+    let a,b;
+    if(GSORT.k==='n'){a=g[x].n;b=g[y].n}else if(GSORT.k==='c'){a=g[x].c;b=g[y].c}else{a=parseFloat(x);b=parseFloat(y)}
+    return (a-b)*GSORT.d||(parseFloat(x)-parseFloat(y));
+  });
+  const lab=k=>r?parseFloat(k)+(gg?uGir():uLen()):k+' x';
+  const logRow=x=>{
+    if(r){const p=roundVol(x.v); return {t:'row',a:String(+p.m.toFixed(2)),b:String(+p.g.toFixed(2)),c:fmtVal(x.c)}}
+    const q=parseSize(x.v); return {t:'row',a:q.a+' x '+q.b,b:String(q.code),c:fmtVal(x.c)};
+  };
+  const grp=(k,out)=>{ g[k].l.forEach(x=>out.push(logRow(x))); out.push({t:'stot',a:'Total '+lab(k),b:g[k].n+(g[k].n>1?' logs':' log'),c:fmtVal(g[k].c)}); };
+  const rg=grList(), items=[], rs=[];
+  if(!rg.length) gks.forEach(k=>grp(k,items));
+  else{
+    const buckets=rg.map(x=>({label:grLabel(x),keys:[],open:true})), other=[];
+    gks.forEach(k=>{let ok=false; const v=parseFloat(k); for(let i=0;i<rg.length;i++){ if(grInR(v,rg[i])){buckets[i].keys.push(k);ok=true;break} } if(!ok) other.push(k)});
+    if(other.length) buckets.push({label:'Other',keys:other,open:true});
+    buckets.forEach(b=>{
+      if(!b.keys.length) return;
+      let n=0,c=0; b.keys.forEach(k=>{n+=g[k].n;c+=g[k].c});
+      items.push({t:'head',a:b.label,b:'',c:''}); b.keys.forEach(k=>{ if(b.open) g[k].l.forEach(x=>items.push(logRow(x))); else grp(k,items) }); items.push({t:'tot',a:'Range total',b:n+(n>1?' logs':' log'),c:fmtVal(c)}); rs.push({a:b.label,b:n+(n>1?' logs':' log'),c:fmtVal(c)});
+    });
+  }
+  return {items:items,N:N,S:S,rs:rs};
+}
+function grPages(items,per){
+  const blocks=[]; let cur=[];
+  items.forEach(x=>{cur.push(x); if(x.t==='stot'||x.t==='tot'){ if(x.t==='tot'&&cur.length===1&&blocks.length){blocks[blocks.length-1]=blocks[blocks.length-1].concat(cur)} else blocks.push(cur); cur=[]; }});
+  if(cur.length) blocks.push(cur);
+  const pages=[]; let pg=[];
+  blocks.forEach(b=>{
+    if(pg.length&&pg.length+b.length>per){pages.push(pg);pg=[]}
+    while(b.length>per){ if(pg.length){pages.push(pg);pg=[]} pages.push(b.slice(0,per)); b=b.slice(per) }
+    pg=pg.concat(b);
+  });
+  if(pg.length) pages.push(pg);
+  return pages.length?pages:[[]];
+}
+function grLayout(d){
+  const NC=3, CAP=36, CH=grPages(d.items,CAP), PG=[]; for(let i=0;i<CH.length;i+=NC){const pg=[]; for(let j=0;j<NC;j++) pg.push(CH[i+j]||null); PG.push(pg)}
+  const last=PG[PG.length-1], lens=last.map(x=>x?x.length:0), n=d.rs.length+3+(MODE==='round'?1:0);
+  PG.sp='none'; PG.sc=0;
+  if(d.rs.length){
+    const fi=last.indexOf(null);
+    if(fi>-1){PG.sp='col';PG.sc=fi}
+    else if(lens[NC-1]+1+n<=CAP){PG.sp='col';PG.sc=NC-1}
+    else if(Math.max.apply(null,lens)+n+2<=CAP) PG.sp='below';
+    else {PG.push([null,null,null]); PG.sp='below'}
+  }
+  return PG;
+}
+function grSumHead(){return isR(MODE)?(gByGirth()?'GIRTH':'LENGTH'):'SIZE'}
+function grTitle(){
+  const gg=gByGirth(), r=isR(MODE);
+  return r?('ROUND LOG '+(gg?'GIRTH':'LENGTH')+'-WISE SUMMARY'+(MODE==='rft'?' (CFT)':'')):'SIZE-WISE SUMMARY';
+}
+function grHeads(){const gg=gByGirth(), r=isR(MODE); return [r?'LENGTH ('+uLen().trim()+')':'SIZE',r?'GIRTH ('+uGir().trim()+')':'LENGTH',MODE==='round'?'CBM':'CFT']}
+function grGrandText(d){return 'Total '+(MODE==='round'?'CBM':'CFT')+': '+fmtVal(d.S)+'   ('+d.N+' logs)'+(MODE==='round'?'   CFT: '+(d.S*CFT_PER_CBM).toFixed(2):'')}
+function grSheetHtml(){
+  const d=grItems(); if(!d.N) return '';
+  const PG=grLayout(d), pages=PG.length, hd=grHeads();
+  const th0='border:1px solid #000;height:6mm;padding:0 3px;background:#e6e6e6;font-size:11.5px;white-space:nowrap;color:#000;text-align:center;', W3=['34%','32%','34%'], td='border:1px solid #000;height:5.9mm;padding:0 4px;font-size:14px;line-height:1.1;';
+  const tbl=it=>{
+    if(!it) return '';
+    let t='<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-family:Arial,sans-serif"><thead><tr>'+hd.map((x,i)=>'<th style="'+th0+'width:'+W3[i]+(i===2?';text-align:center':'')+'">'+x+'</th>').join('')+'</tr></thead><tbody>';
+    it.forEach(x=>{
+      if(x.t==='head') t+='<tr><td colspan="3" style="'+td+'background:#f2f2f2;font-weight:700;text-align:center">'+esc(x.a)+'</td></tr>';
+      else{const b=x.t==='tot'?'font-weight:700;background:#e6e6e6;border-top:2px solid #000;':x.t==='stot'?'font-weight:700;background:#f5f5f5;':''; t+='<tr><td style="'+td+b+'text-align:center">'+esc(x.a)+'</td><td style="'+td+b+'text-align:center">'+x.b+'</td><td style="'+td+b+'text-align:center">'+x.c+'</td></tr>'}
+    });
+    return t+'</tbody></table>';
+  };
+  const sumTbl=(w,mt)=>{
+    const sx='border:1px solid #000;height:5.9mm;padding:0 4px;font-size:14px;line-height:1.1;';
+    const hx='border:1px solid #000;height:6mm;padding:0 3px;background:#e6e6e6;font-size:11.5px;white-space:nowrap;color:#000;text-align:center;';
+    const big='border:1px solid #000;height:8mm;padding:0 3px;font-size:13px;white-space:nowrap;overflow:hidden;font-weight:700;background:#e6e6e6;';
+    return '<table style="width:'+w+';margin:'+mt+';table-layout:fixed;border-collapse:collapse;font-family:Arial,sans-serif"><thead><tr><th colspan="3" style="'+hx+'background:#d9d9d9">SUMMARY</th></tr><tr><th style="'+hx+'width:38%">'+grSumHead()+'</th><th style="'+hx+'width:28%">LOGS</th><th style="'+hx+'width:34%;text-align:center">'+hd[2]+'</th></tr></thead><tbody>'
+      +d.rs.map(x=>'<tr><td style="'+sx+'text-align:center">'+esc(x.a)+'</td><td style="'+sx+'text-align:center">'+x.b+'</td><td style="'+sx+'text-align:center">'+x.c+'</td></tr>').join('')
+      +'<tr><td style="'+big+'text-align:center;font-size:12px;padding:0 2px">TOTAL '+(MODE==='round'?'CBM':'CFT')+'</td><td style="'+big+'text-align:center;font-size:14px;padding:0 2px">'+d.N+(d.N>1?' logs':' log')+'</td><td style="'+big+'text-align:center;font-size:15px">'+fmtVal(d.S)+'</td></tr>'
+      +(MODE==='round'?'<tr><td style="'+big+'text-align:center;font-size:12px;padding:0 2px">TOTAL CFT</td><td style="'+big+'"></td><td style="'+big+'text-align:center;font-size:15px">'+(d.S*CFT_PER_CBM).toFixed(2)+'</td></tr>':'')
+      +'</tbody></table>';
+  };
+  let h='';
+  PG.forEach((pp,p)=>{
+    const lastP=p===pages-1;
+    h+='<div class="page" style="page-break-after:'+(p<pages-1?'always':'auto')+'"><h2>'+esc(grTitle())+'</h2>'+(sheetHead()?'<div style="text-align:center;font-weight:700;margin-bottom:2px">'+esc(sheetHead())+'</div>':'')
+      +'<div style="text-align:center;font-size:12px;margin-bottom:8px">'+esc(((getCurrent()&&getCurrent().indexOf(today())!==0)?getCurrent()+'  |  ':'')+today()+(pages>1?'  |  Page '+(p+1)+'/'+pages:''))+'</div>'
+      +'<div style="display:flex;gap:8px;align-items:flex-start">'+pp.map((it,ci)=>'<div style="flex:1;min-width:0">'+tbl(it)+((lastP&&PG.sp==='col'&&PG.sc===ci)?sumTbl('100%',it?'5mm 0 0':'0'):'')+'</div>').join('')+'</div>';
+    if(lastP&&PG.sp==='below') h+=sumTbl('50%','5mm auto 0');
+    if(lastP&&PG.sp==='none') h+='<div class="grand" style="text-align:center;margin-top:4mm">'+esc(grGrandText(d)).replace(/   /g,' &nbsp; ')+'</div>';
+    h+='</div>';
+  });
+  return h;
+}
+function makeGroupPdf(){
+  const d=grItems(), hd=grHeads();
+  const W=595,H=842,M=26,GAP=10,RH=18,HH=20, PG=grLayout(d), NC=3;
+  const pages=PG.length;
+  const esc2=t=>String(t).replace(/[^\x20-\x7e]/g,'?').replace(/([\\()])/g,'\\$1');
+  const f2=n=>(Math.round(n*100)/100).toString();
+  const tw=(t,sz,bold)=>{let w=0;const tb=bold?HBW:HW;for(const ch of String(t)){const k=ch.charCodeAt(0)-32;w+=(k>=0&&k<95?tb[k]:556)/1000}return w*sz};
+  const pdfPages=[], tx=(W-2*M-GAP*(NC-1))/NC, c1=tx*0.34, c2=tx*0.32, FS=10.5;
+  for(let pg=0;pg<pages;pg++){
+    let c='0.5 w\n';
+    const T=(x,y,t,sz,bold,align)=>{let xx=x; if(align==='r') xx=x-tw(t,sz,bold); else if(align==='c') xx=x-tw(t,sz,bold)/2; c+='BT /'+(bold?'F2':'F1')+' '+sz+' Tf '+f2(xx)+' '+f2(H-y)+' Td ('+esc2(t)+') Tj ET\n'};
+    const Ln=(x1,y1,x2,y2)=>{c+=f2(x1)+' '+f2(H-y1)+' m '+f2(x2)+' '+f2(H-y2)+' l S\n'};
+    T(W/2,38,grTitle(),15,true,'c');
+    if(sheetHead()) T(W/2,55,sheetHead(),sheetHead().length>60?10:12,true,'c');
+    T(W/2,sheetHead()?69:54,((getCurrent()&&getCurrent().indexOf(today())!==0)?getCurrent()+'  |  ':'')+today()+(pages>1?'  |  Page '+(pg+1)+'/'+pages:''),9,false,'c');
+    const top=sheetHead()?82:68; let maxY=top;
+    PG[pg].forEach((items,ti)=>{
+      if(!items) return;
+      const X=M+ti*(tx+GAP), yb=top+HH+items.length*RH; if(yb>maxY) maxY=yb;
+      c+='0.9 g '+f2(X)+' '+f2(H-top-HH)+' '+f2(tx)+' '+HH+' re f 0 g\n';
+      c+=f2(X)+' '+f2(H-yb)+' '+f2(tx)+' '+f2(yb-top)+' re S\n';
+      Ln(X,top+HH,X+tx,top+HH);
+      T(X+c1/2,top+14,hd[0],9,true,'c'); T(X+c1+c2/2,top+14,hd[1],9,true,'c'); T(X+c1+c2+(tx-c1-c2)/2,top+14,hd[2],9,true,'c');
+      items.forEach((x,i)=>{
+        const y=top+HH+i*RH;
+        if(i>0) Ln(X,y,X+tx,y);
+        if(x.t==='head'){c+='0.95 g '+f2(X)+' '+f2(H-y-RH)+' '+f2(tx)+' '+RH+' re f 0 g\n'; T(X+tx/2,y+12.5,x.a,FS,true,'c'); return}
+        const bd=x.t==='tot'||x.t==='stot';
+        if(bd) c+=(x.t==='tot'?'0.9':'0.96')+' g '+f2(X)+' '+f2(H-y-RH)+' '+f2(tx)+' '+RH+' re f 0 g\n';
+        T(X+c1/2,y+12.5,x.a,FS,bd,'c'); T(X+c1+c2/2,y+12.5,x.b,FS,bd,'c'); T(X+c1+c2+(tx-c1-c2)/2,y+12.5,x.c,FS,bd,'c');
+      });
+      Ln(X+c1,top,X+c1,yb); Ln(X+c1+c2,top,X+c1+c2,yb);
+    });
+    let gy=maxY+28;
+    if(pg===pages-1&&PG.sp!=='none'){
+      const col=PG.sp==='col', SW=col?tx:300, SX=col?M+PG.sc*(tx+GAP):(W-SW)/2, s1=SW*0.38, s2=SW*0.28, cb=MODE==='round';
+      const rl=col&&PG[pg][PG.sc]?PG[pg][PG.sc].length:0, sy=col?(rl?top+HH+rl*RH+RH:top):maxY+14, nr=d.rs.length, TH=26, sb=sy+RH*(nr+2)+TH*(cb?2:1);
+      c+='0.85 g '+f2(SX)+' '+f2(H-sy-RH)+' '+f2(SW)+' '+RH+' re f 0 g\n';
+      c+='0.92 g '+f2(SX)+' '+f2(H-sy-2*RH)+' '+f2(SW)+' '+RH+' re f 0 g\n';
+      const ty=sy+RH*(nr+2);
+      c+='0.9 g '+f2(SX)+' '+f2(H-sb)+' '+f2(SW)+' '+f2(sb-ty)+' re f 0 g\n';
+      c+=f2(SX)+' '+f2(H-sb)+' '+f2(SW)+' '+f2(sb-sy)+' re S\n';
+      T(SX+SW/2,sy+12.5,'SUMMARY',10,true,'c');
+      Ln(SX,sy+RH,SX+SW,sy+RH);
+      T(SX+s1/2,sy+RH+12.5,grSumHead(),9,true,'c'); T(SX+s1+s2/2,sy+RH+12.5,'LOGS',9,true,'c'); T(SX+s1+s2+(SW-s1-s2)/2,sy+RH+12.5,hd[2].replace(/ \(.*\)/,''),9,true,'c');
+      d.rs.forEach((x,i)=>{const y=sy+RH*(i+2); Ln(SX,y,SX+SW,y); T(SX+s1/2,y+12.5,x.a,FS,false,'c'); T(SX+s1+s2/2,y+12.5,x.b,FS,false,'c'); T(SX+s1+s2+(SW-s1-s2)/2,y+12.5,x.c,FS,false,'c')});
+      Ln(SX,ty,SX+SW,ty); T(SX+s1/2,ty+18,'TOTAL '+(cb?'CBM':'CFT'),10,true,'c'); T(SX+s1+s2/2,ty+18,d.N+(d.N>1?' logs':' log'),11,true,'c'); T(SX+s1+s2+(SW-s1-s2)/2,ty+18,fmtVal(d.S),12.5,true,'c');
+      if(cb){Ln(SX,ty+TH,SX+SW,ty+TH); T(SX+s1/2,ty+TH+18,'TOTAL CFT',10,true,'c'); T(SX+s1+s2+(SW-s1-s2)/2,ty+TH+18,(d.S*CFT_PER_CBM).toFixed(2),12.5,true,'c')}
+      Ln(SX+s1,sy+RH,SX+s1,sb); Ln(SX+s1+s2,sy+RH,SX+s1+s2,sb);
+      gy=Math.max(maxY,sb)+28;
+    }
+    if(pg===pages-1&&PG.sp==='none') T(W/2,gy,grGrandText(d),13,true,'c');
+    pdfPages.push((typeof wmPdf==='function'?wmPdf(W,H):'')+c+(typeof promoPdf==='function'?promoPdf(W,H):''));
+  }
+  return {blob:pdfBlob(pdfPages,W,H), total:d.S, count:d.N};
+}
 function grRender(){
   const box=document.getElementById('grp-ranges'); if(!box) return;
   const rg=grList(), gg=gByGirth(), u=isR(MODE)?(gg?uGir():uLen()).trim():'';
   box.innerHTML=rg.length?'<div class="sub" style="font-size:.8rem;margin:0 0 4px">'+(gg?'Girth':'Length')+' Range'+(u?' ('+u+')':'')+'</div>'+rg.map((x,i)=>
     '<div style="display:grid;grid-template-columns:1fr 1fr 46px;gap:8px;margin:0 0 8px">'
     +'<input type="text" inputmode="decimal" autocomplete="off" data-i="'+i+'" data-k="f" value="'+esc(x.f)+'" placeholder="From" aria-label="From length" style="min-height:46px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;width:100%;box-sizing:border-box">'
-    +'<input type="text" inputmode="decimal" autocomplete="off" data-i="'+i+'" data-k="t" value="'+esc(x.t)+'" placeholder="To (khali = upper)" aria-label="To length" style="min-height:46px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;width:100%;box-sizing:border-box">'
+    +'<input type="text" inputmode="decimal" autocomplete="off" data-i="'+i+'" data-k="t" value="'+esc(x.t)+'" placeholder="To (blank = UP)" aria-label="To length" style="min-height:46px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font:inherit;width:100%;box-sizing:border-box">'
     +'<button type="button" data-x="'+i+'" aria-label="Remove range" class="alt" style="min-height:46px;padding:0;color:var(--bad)">x</button></div>').join(''):'';
 }
 function gSortBy(k,by){
@@ -1500,7 +1659,7 @@ function buildSheet(){
 document.getElementById('print').onclick=()=>{
   if(!getList().length){return}
   if(!requireActive()) return;
-  sortRows(); buildSheet(); showPreview();
+  PV_KIND='sheet'; sortRows(); buildSheet(); showPreview();
 };
 
 
@@ -1688,6 +1847,9 @@ function makeSheetPdf(){
     }
     pdfPages.push(wmPdf(W,H)+c+promoPdf(W,H));
   }
+  return {blob:pdfBlob(pdfPages,W,H), total:grand, count:l.length};
+}
+function pdfBlob(pdfPages,W,H){
   // assemble PDF
   const objs=[]; const add=t=>{objs.push(t);return objs.length};
   add('<< /Type /Catalog /Pages 2 0 R >>');
@@ -1706,7 +1868,7 @@ function makeSheetPdf(){
   const xr=out.length;
   out+='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n'+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size '+(objs.length+1)+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF';
   const bytes=new Uint8Array(out.length); for(let i=0;i<out.length;i++) bytes[i]=out.charCodeAt(i)&255;
-  return {blob:new Blob([bytes],{type:'application/pdf'}), total:grand, count:l.length};
+  return new Blob([bytes],{type:'application/pdf'});
 }
 // ---------- Native Android: share a file (WhatsApp, Drive, Files...) and print ----------
 window.NativeShare=async function(blob,name,mime,text){
@@ -1725,9 +1887,9 @@ function pvSay(t,bad){const pm=document.getElementById('pv-msg'); if(pm) pm.inne
 async function shareSawnPdf(){
   if(!getList().length){st.innerHTML='<span class="err">Add some sizes first.</span>';pvSay('Add some sizes first.',true);return}
   if(!requireActive()) return;
-  sortRows();
-  const r=makeSheetPdf();
-  const base=(sheetName()||getCurrent()||('log-sheet-'+today())).replace(/[^\w\-]+/g,'_');
+  const grp=PV_KIND==='group'; if(!grp) sortRows();
+  const r=grp?makeGroupPdf():makeSheetPdf();
+  const base=(sheetName()||getCurrent()||('log-sheet-'+today())).replace(/[^\w\-]+/g,'_')+(grp?'_summary':'');
   const fname=base+'.pdf', file=new File([r.blob],fname,{type:'application/pdf'});
   const text=(isR(MODE)?'Round log sheet':'Log sheet')+' - '+r.count+' logs, Total '+(MODE==='round'?'CBM ':'CFT ')+fmtVal(r.total);
   try{
@@ -2321,6 +2483,12 @@ function showPreviewNow(){
 }
 window.addEventListener('resize',()=>{if(document.getElementById('dlg-preview').open) fitPreview()});
 document.getElementById('pv-print').onclick=()=>window.print();
+document.getElementById('dlg-preview').addEventListener('close',()=>{PV_KIND='sheet'});
+document.getElementById('grp-print').onclick=()=>{
+  if(!getList().length) return; if(!requireActive()) return;
+  const h=grSheetHtml(); if(!h){st.innerHTML='<span class="err">Add some valid sizes first.</span>';return}
+  document.getElementById('sheet').innerHTML=h; PV_KIND='group'; showPreview();
+};
 document.getElementById('pv-wa').onclick=()=>{pvSay('');return MODE==='fix'?shareFixPdf():shareSawnPdf()};
 
 // ---------- Fixed size mode (e.g. 4x3): Length + Pcs -> CFT ----------
@@ -3085,7 +3253,7 @@ setTimeout(go,1800);})();
     return Object.keys(map).map(function(k){return map[k]});
   }
   function kindsOf(list){return KINDS.filter(function(k){return list.some(function(x){return x.kind===k})})}
-  function rLabel(r){var f=String(r.f).trim()||'0',t=String(r.t).trim();return t?f+' - '+t:f+' upper'}
+  function rLabel(r){var f=String(r.f).trim()||'0',t=String(r.t).trim();return t?f+' - '+t:f+' & UP'}
   function inR(l,r){var f=fxNum(r.f),t=String(r.t).trim()===''?Infinity:fxNum(r.t);
     if(!(f>=0))f=0;if(!(t>=0))t=Infinity;return l>=f-1e-9&&l<=t+1e-9}
   function groups(k,list){
@@ -3117,7 +3285,7 @@ setTimeout(go,1800);})();
       return '<div style="font-weight:700;margin:10px 0 4px">'+KN[k]+' ('+KU[k]+')</div>'
         +(rg.length?rg.map(function(r,i){
           return '<div class="mfr"><input type="text" inputmode="decimal" autocomplete="off" data-kind="'+k+'" data-i="'+i+'" data-k="f" value="'+E(r.f)+'" placeholder="From" aria-label="From length">'
-            +'<input type="text" inputmode="decimal" autocomplete="off" data-kind="'+k+'" data-i="'+i+'" data-k="t" value="'+E(r.t)+'" placeholder="To (khali = upper)" aria-label="To length">'
+            +'<input type="text" inputmode="decimal" autocomplete="off" data-kind="'+k+'" data-i="'+i+'" data-k="t" value="'+E(r.t)+'" placeholder="To (blank = UP)" aria-label="To length">'
             +'<button type="button" data-kind="'+k+'" data-x="'+i+'" aria-label="Remove range">x</button></div>'}).join(''):'<div class="sub" style="font-size:.85rem;margin-bottom:6px">No range set. All sizes will appear in one list.</div>')
         +'<div class="mgrow"><button type="button" class="alt" data-add="'+k+'">+ Range</button><button type="button" class="alt" data-reset="'+k+'">Reset ranges</button></div>';
     }).join(''):'<div class="sub" style="font-size:.85rem">Select a file first.</div>';
@@ -3175,7 +3343,7 @@ setTimeout(go,1800);})();
       if(many)h+='<div style="font-size:15px;font-weight:800;margin:1mm 0 2mm">'+E(KN[k].toUpperCase())+'</div>';
       G.forEach(function(x){
         h+='<table style="'+tbl+'">'+cols()+'<thead>';
-        if(x.label)h+='<tr>'+td(5,'left','LENGTH &nbsp;'+E(x.label)+(/upper|Other/.test(x.label)?'':unit),'background:#d9d9d9;font-weight:800;font-size:14px')+'</tr>';
+        if(x.label)h+='<tr>'+td(5,'left','LENGTH &nbsp;'+E(x.label)+(/\bUP\b|Other/.test(x.label)?'':unit),'background:#d9d9d9;font-weight:800;font-size:14px')+'</tr>';
         h+='<tr style="background:#f0f0f0;font-weight:700;font-size:12px">'+td(0,'center','SR.')+td(0,'center','SIZE')+td(0,'right','LENGTH')+td(0,'right','PCS')+td(0,'right',vk)+'</tr></thead><tbody>';
         x.items.forEach(function(it,i){
           h+='<tr style="page-break-inside:avoid">'+td(0,'center',i+1)+td(0,'left',E(it.label))+td(0,'right',fxFmtLen(it.l))+td(0,'right',it.p)+td(0,'right',fmt(k,it.u*it.p))+'</tr>'});

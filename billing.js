@@ -38,7 +38,12 @@
       if (!window.NATIVE) { S.err = 'Purchases work only in the Android app from Google Play.'; return S; }
       await whenReady();
       if (!window.CdvPurchase) { S.err = 'Google Play billing is not available in this build.'; return S; }
-      var cp = CdvPurchase, store = cp.store; S.store = store; S.plat = cp.Platform.GOOGLE_PLAY;
+      var cp = window.CdvPurchase || {}, store = cp.store;
+      var PL = cp.Platform || {}, PT = cp.ProductType || {};
+      if (!store) { S.err = 'Billing plugin loaded but store missing (' + Object.keys(cp).join(',') + ')'; initP = null; return S; }
+      S.store = store; S.plat = PL.GOOGLE_PLAY || 'android-playstore';
+      PT = { PAID_SUBSCRIPTION: PT.PAID_SUBSCRIPTION || 'paid subscription', CONSUMABLE: PT.CONSUMABLE || 'consumable' };
+      cp = { ProductType: PT, store: store };
       try {
         store.register([
           { id: P.prem, type: cp.ProductType.PAID_SUBSCRIPTION, platform: S.plat },
@@ -59,7 +64,7 @@
           } catch (e) {}
         });
         S.ready = true;
-      } catch (e) { S.err = 'Billing setup failed: ' + (e && e.message || e); }
+      } catch (e) { S.err = 'Billing setup failed: ' + (e && e.message || e); initP = null; }
       return S;
     })();
     return initP;
@@ -71,11 +76,11 @@
     if (!offer) throw new Error('No offer for ' + id);
     var err = await S.store.order(offer);
     if (err && err.code) {
-      if (err.code === cp().ErrorCode.PAYMENT_CANCELLED) { var c = new Error('Purchase cancelled.'); c.cancelled = true; throw c; }
+      if ((err.code === ((cp().ErrorCode || {}).PAYMENT_CANCELLED || 6777003))) { var c = new Error('Purchase cancelled.'); c.cancelled = true; throw c; }
       throw new Error(err.message || ('Purchase failed (' + err.code + ')'));
     }
   }
-  function cp() { return window.CdvPurchase; }
+  function cp() { return window.CdvPurchase || {}; }
   // verify everything the Google account already owns (restore / renewals)
   async function syncOwned() {
     await init(); if (!S.ready) return 0;
