@@ -203,6 +203,7 @@ body.round.rft .th2,body.round.rft .cft2{display:none}
 body.rft .etbl th:nth-child(3),body.rft .etbl td:nth-child(3){width:76px;text-align:right}
 body.rft .etbl th:nth-child(2){font-size:.72rem;text-transform:none;letter-spacing:0;white-space:normal}
 body.rft .etbl td:nth-child(2){padding-right:4px}
+body.rft .etbl th:nth-child(3),body.rft .etbl td:nth-child(3){width:58px;padding-left:0;padding-right:2px}
 .rb,.rb2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .rb2{text-align:center}
 .rb input{width:100%;min-width:0;box-sizing:border-box;text-align:center;padding:6px 2px}
@@ -934,6 +935,8 @@ html.locked body{overflow:hidden}
   <div id="xchk" hidden style="margin:8px 0;padding:8px;border:2px solid #c62828;border-radius:6px;background:#ffe9e9">
     <span id="xchk-n" style="color:#b3261e;font-weight:600"></span>
     <button type="button" id="xchk-go" style="margin-left:8px;padding:6px 12px;background:#c62828">Go to next</button>
+    <button type="button" id="xchk-ok" style="margin-left:8px;padding:6px 12px;background:#1b7f3b">All correct</button>
+    <div style="font-size:.8rem;color:#555;margin-top:4px">Fix the size, or tap the red "sheet ... ✎" under a row (or "All correct") if the size is right.</div>
   </div>
   <div id="free-left" class="sub" style="font-size:.8rem;margin:2px 0 0;font-weight:600" hidden></div>
   <div id="saved" class="sub" style="font-size:.8rem;margin:0" role="status"></div>
@@ -1534,7 +1537,7 @@ function update(){
     else{cell.textContent=fmtVal(c);cell.className='num cft';sum+=c;cnt++;}
     const ck=tr.dataset.sc?sheetCheck(tr.dataset.sc,v):null, xb=!!ck&&!ck.ok&&c!==null;
     tr.classList.toggle('xbad',xb);
-    if(ck){const sm=document.createElement('small');sm.className='xs '+(ck.ok?'xok':'xno');sm.textContent='sheet '+tr.dataset.sc+(ck.ok?' \u2713':'');cell.appendChild(sm)}
+    if(ck){const sm=document.createElement('small');sm.className='xs '+(ck.ok?'xok':'xno');sm.textContent='sheet '+tr.dataset.sc+(ck.ok?' \u2713':'');if(!ck.ok&&c!==null){sm.textContent+=' \u270E';sm.style.cssText='text-decoration:underline;cursor:pointer;padding:4px 0';sm.onclick=ev=>{ev.stopPropagation();markXOk([tr])}}cell.appendChild(sm)}
   });
   { const nx=rows.querySelectorAll('tr.xbad').length, xc=document.getElementById('xchk');
     if(xc){xc.hidden=!nx;document.getElementById('xchk-n').textContent=nx+(nx===1?' row does':' rows do')+' not match the sheet\'s '+(MODE==='round'?'CFT/CBM':'C.F.T.')+' - check the size'} }
@@ -1605,6 +1608,16 @@ document.getElementById('gr-clear').onclick=()=>{grList().length=0; grSave(); gr
   el.addEventListener('click',()=>gSortBy(a[1],a[1]==='k'?GSORT.by:undefined));
   el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();gSortBy(a[1],a[1]==='k'?GSORT.by:undefined)}});
 });
+function xOkVal(tr){const v=tr.querySelector('input').value.trim(), c=calc(v); if(c===null) return '';
+  if(isR(MODE)){const r=roundVol(v); return r?r.cbm.toFixed(3):''}
+  return String(Math.round(c*100))}
+async function markXOk(trs){
+  trs=trs.filter(t=>t&&xOkVal(t)); if(!trs.length) return;
+  const msg=trs.length===1?'Size '+trs[0].querySelector('input').value.trim()+' is correct? The sheet value will be replaced by the calculated value and this row turns green.':'Mark all '+trs.length+' red rows as correct? Sheet values will be replaced by the calculated values.';
+  if(!(await askConfirm(msg,'Yes, correct'))) return;
+  trs.forEach(t=>{t.dataset.sc=xOkVal(t)}); update(); try{save()}catch(e){}
+}
+document.getElementById('xchk-ok').onclick=()=>markXOk([...rows.querySelectorAll('tr.xbad')]);
 let xPos=-1;
 document.getElementById('xchk-go').onclick=()=>{
   const bad=[...rows.querySelectorAll('tr.xbad')]; if(!bad.length) return;
