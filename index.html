@@ -2056,7 +2056,7 @@ function renderPhotos(){
   box.innerHTML='<div class="phhead"><b>'+PHOTOS.length+' photo'+(PHOTOS.length>1?'s':'')+'</b><span class="phb"><button type="button" class="alt phx" id="ph-hist">&#128193; History</button><button type="button" class="alt phx" id="ph-clear">Remove all</button></span></div>'+
     PHOTOS.map((p,i)=>{
       const cls=p.state==='error'?'err':(p.state==='done'?(p.warn?'warn':'ok'):''), txt=p.state==='new'?'Ready to read':(p.state==='reading'?('Reading... '+(p.pct||0)+'%'):p.msg);
-      return '<div class="ph"><img src="'+p.url+'" alt="Photo '+(i+1)+'" data-view="'+p.id+'"><div class="phi"><div class="phn">Photo '+(i+1)+'</div><div class="phs '+cls+'">'+txt+'</div></div><button type="button" class="alt phd" data-del="'+p.id+'" aria-label="Remove photo">x</button></div>';
+      return '<div class="ph"><img src="'+p.url+'" alt="Photo '+(i+1)+'" data-view="'+p.id+'"><div class="phi"><div class="phn">Photo '+(i+1)+'</div><div class="phs '+cls+'">'+txt+'</div>'+((p.state==='done')?'<button type="button" class="alt phx" style="margin-top:6px" data-again="'+p.id+'">&#8635; Read again</button>':'')+'</div><button type="button" class="alt phd" data-del="'+p.id+'" aria-label="Remove photo">x</button></div>';
     }).join('');
 }
 file.onchange=()=>{
@@ -2071,6 +2071,7 @@ file.onchange=()=>{
       if(PHOTOS.length){const l=PHOTOS[PHOTOS.length-1]; prev.src=l.url; prev.hidden=false}}; }}
 document.getElementById('photos').addEventListener('click',e=>{
   if(e.target.closest('#ph-hist')){histOpen();return}
+  { const ag=e.target.closest('[data-again]'); if(ag){ const pp=PHOTOS.find(x=>String(x.id)===ag.dataset.again); if(pp) photoReadAgain(pp); return } }
   const v=e.target.closest('[data-view]'), d=e.target.closest('[data-del]'), c=e.target.closest('#ph-clear');
   if(v){const p=PHOTOS.find(x=>x.id==v.getAttribute('data-view')); if(p){prev.src=p.url;prev.hidden=false;prev.scrollIntoView({block:'nearest'})}}
   if((d||c)&&phBusy) return;
@@ -2149,6 +2150,22 @@ document.getElementById('phh-close').onclick=histClose;
 document.getElementById('phv-back').onclick=histBack;
 document.getElementById('phv-zoom').onclick=()=>{const b=document.getElementById('phv-i');b.classList.toggle('z')};
 document.getElementById('phv-img').onclick=()=>document.getElementById('phv-i').classList.toggle('z');
+async function askTwo(msg,yes,no){   // confirm box with two clear choices (second button is not just 'Cancel')
+  await new Promise(r=>setTimeout(r,80));   // let the previous box finish closing first
+  const n=document.getElementById('cf-no'), old=n.textContent; n.textContent=no;
+  try{ return await askConfirm(msg,yes) } finally { n.textContent=old }
+}
+async function photoReadAgain(p){   // optional: read a photo that was already read (uses 1 AI image)
+  if(phBusy) return;
+  if(!(await askConfirm('Read this photo again?\n\nThis uses 1 more AI image. Without Premium, the free 50 entries/day limit still applies.','Read again'))) return;
+  const old=[...rows.querySelectorAll('tr[data-pk="'+p.key+'"]')];
+  if(old.length){
+    const rm=await askTwo('This sheet already has '+old.length+' sizes from this photo.\n\nRemove those old sizes before reading again? (If you keep them, the new read is added after them and you may get double rows.)','Remove old sizes','Keep old sizes');
+    if(rm){ old.forEach(tr=>tr.remove()); if(!rows.querySelector('tr')) addRow(); update() }
+  }
+  p.state='new'; p.msg=''; p.warn=false; p.snap=null; renderPhotos();
+  document.getElementById('go').click();
+}
 function histAdd(h,state,msg,warn,snap){
   const f=b64ToBlob(h.b64); addPhoto(f); const p=PHOTOS[PHOTOS.length-1]; p.key=h.key; p.b64=h.b64;
   if(state==='done'){p.state='done';p.msg=msg||'Already read';p.warn=!!warn;p.snap=snap||null}
@@ -2177,13 +2194,14 @@ document.getElementById('phv-use').onclick=()=>{
   else if(inSheet) html+='Its sizes are already in this sheet.<button type="button" id="cho">Add photo</button>';
   else if(hasData&&!modeOk) html+='It was read in another type, so its sizes cannot be restored in this one.<button type="button" id="cho">Add photo only</button>';
   else html+='Its sizes stay in the sheet where they were read.<button type="button" id="cho">Add photo</button>';
-  html+='<button type="button" class="g" id="chx">Cancel</button>';
+  html+='<button type="button" class="g" id="chag">Add photo and read again (uses 1 AI image)</button><button type="button" class="g" id="chx">Cancel</button>';
   ch.innerHTML=html; ch.hidden=false;
   const done=()=>{ch.hidden=true;ch.innerHTML=''};
   const mk=(restore)=>()=>{ if(restore){histRestoreRows(h)} done(); histAdd(h,'done',(rd.msg||'Already read')+' <b>· from history, not read again</b>',rd.warn,rd) };
   const r1=document.getElementById('chr'); if(r1) r1.onclick=mk(true);
   document.getElementById('cho').onclick=mk(false);
   document.getElementById('chx').onclick=done;
+  document.getElementById('chag').onclick=()=>{ done(); histAdd(h); const p=PHOTOS[PHOTOS.length-1]; if(p) photoReadAgain(p) };
 };
 document.getElementById('phv-del').onclick=async()=>{
   const h=HCUR; if(!h) return;
