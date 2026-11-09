@@ -91,6 +91,32 @@ tr.xbad td.cft,tr.xbad td.idx{font-weight:700;color:#b3261e}
 .xs.xno{color:#c62828;font-weight:800}
 #photos .phhead{display:flex;justify-content:space-between;align-items:center;margin:8px 0 4px}
 #photos .phx{padding:4px 10px;font-size:.8rem}
+#photos .phb{display:flex;gap:6px}
+#phh{position:fixed;inset:0;z-index:9000;background:#f2f7f4;display:flex;flex-direction:column}
+#phh[hidden]{display:none}
+#phh .hb{background:var(--g,#1e6b45);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:10px}
+#phh .hb b{flex:1;font-size:1.05rem}
+#phh .hb button{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 12px;font-size:.85rem;width:auto;margin:0}
+#phh .hg{flex:1;overflow:auto;padding:10px 10px 90px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
+#phh .hc{background:#fff;border:1px solid var(--line,#cfe0d6);border-radius:10px;overflow:hidden;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+#phh .hc img{display:block;width:100%;height:150px;object-fit:cover;background:#e6ede9}
+#phh .hc div{padding:6px 8px;font-size:.78rem;line-height:1.3;color:#333}
+#phh .hc small{color:#667;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#phh .he{grid-column:1/-1;text-align:center;color:#667;padding:40px 10px;font-size:.95rem}
+#phv{position:fixed;inset:0;z-index:9100;background:#111;display:flex;flex-direction:column}
+#phv[hidden]{display:none}
+#phv .vi{flex:1;overflow:auto;text-align:center;-webkit-overflow-scrolling:touch}
+#phv .vi img{max-width:100%;max-height:100%;margin:auto;display:block;object-fit:contain}
+#phv .vi.z img{max-width:none;max-height:none;width:240%}
+#phv .vb{display:flex;gap:8px;padding:10px 10px 84px;background:#1b1b1b}
+#phv .vb button{flex:1;margin:0;padding:10px 6px;font-size:.85rem;border-radius:8px;border:1px solid #4a8;background:#1e6b45;color:#fff}
+#phv .vb button.d{background:#8d1f1f;border-color:#c55}
+#phv .vb button.g{background:#333;border-color:#666}
+#phv #phv-ch{background:#fff;color:#222;padding:12px;font-size:.88rem;line-height:1.4;border-top:3px solid #1e6b45}
+#phv #phv-ch button{display:block;width:100%;margin:8px 0 0;padding:10px;font-size:.88rem;border-radius:8px;border:1px solid #1e6b45;background:#1e6b45;color:#fff}
+#phv #phv-ch button.g{background:#fff;color:#1e6b45}
+#phv .vt{color:#ddd;font-size:.8rem;padding:8px 12px;background:#1b1b1b}
+
 #photos .ph{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px;margin:6px 0;background:#fff}
 #photos .ph img{width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;flex:none}
 #photos .phi{flex:1;min-width:0;font-size:.85rem}
@@ -905,7 +931,9 @@ html.locked body{overflow:hidden}
   <input id="file" type="file" accept="image/*" multiple>
   <label for="file-doc" style="margin-top:10px;display:block">Or Excel (.xlsx / .xls), CSV or PDF file</label>
   <input id="file-doc" type="file" accept=".xlsx,.xlsm,.xls,.csv,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" multiple>
-  <div id="photos"></div>
+  <div id="photos"></div><div id="phh" hidden><div class="hb"><b id="phh-t">Photo history</b><button type="button" id="phh-clear">Delete all</button><button type="button" id="phh-close">Close</button></div><div class="hg" id="phh-g"></div></div>
+<div id="phv" hidden><div class="vt" id="phv-t"></div><div class="vi" id="phv-i"><img id="phv-img" alt="Photo"></div><div id="phv-ch" hidden></div><div class="vb"><button type="button" class="g" id="phv-zoom">Zoom</button><button type="button" id="phv-use">Add to this sheet</button><button type="button" class="d" id="phv-del">Delete</button><button type="button" class="g" id="phv-back">Back</button></div></div>
+
   <img id="prev" alt="" hidden>
   <div class="btnrow" style="grid-template-columns:1fr"><button id="go" type="button">Read sizes</button></div>
   <p id="read-note" style="margin:6px 2px 0;font-size:.8rem;line-height:1.35;color:var(--muted);display:none"></p>
@@ -1246,8 +1274,8 @@ function addRow(size='',after=null){
 }
 const STORE='logcft_rows_v1', KEYSTORE='logcft_key_v1';
 // per-row info from the photo (sheet value, serial, photo no.) - kept so the red "does not match the sheet" marks survive closing the app
-function metaOf(tr){return [tr.dataset.sc||'',tr.dataset.sr||'',tr.dataset.ph||'',tr.dataset.ser||''].map(x=>String(x).replace(/\|/g,'')).join('|')}
-function applyMeta(tr,m){const a=String(m||'').split('|'); if(a[0]) tr.dataset.sc=a[0]; if(a[1]) tr.dataset.sr=a[1]; if(a[2]) tr.dataset.ph=a[2]; if(a[3]) tr.dataset.ser=a[3]}
+function metaOf(tr){return [tr.dataset.sc||'',tr.dataset.sr||'',tr.dataset.ph||'',tr.dataset.ser||'',tr.dataset.pk||''].map(x=>String(x).replace(/\|/g,'')).join('|')}
+function applyMeta(tr,m){const a=String(m||'').split('|'); if(a[0]) tr.dataset.sc=a[0]; if(a[1]) tr.dataset.sr=a[1]; if(a[2]) tr.dataset.ph=a[2]; if(a[3]) tr.dataset.ser=a[3]; if(a[4]) tr.dataset.pk=a[4]}
 function rowMetaList(){return [...rows.querySelectorAll('tr')].filter(tr=>tr.querySelector('input').value.trim()).map(metaOf)}
 function save(){
   try{
@@ -1574,10 +1602,10 @@ function serList(){const o=[];let pos=0;rows.querySelectorAll('tr').forEach(tr=>
 function serLbl(a,idx){return a[idx]!==undefined?String(a[idx]).padStart(2,'0'):String(idx+1).padStart(2,'0')}
 function sortRows(by,keepSer){
   let pos=0;
-  const l=[...rows.querySelectorAll('tr')].map(tr=>{pos++;return {v:normalize(tr.querySelector('input').value),sc:tr.dataset.sc||'',sr:tr.dataset.sr||'',ser:serOf(tr,pos),had:tr.dataset.ser||''}}).filter(x=>x.v);
+  const l=[...rows.querySelectorAll('tr')].map(tr=>{pos++;return {v:normalize(tr.querySelector('input').value),sc:tr.dataset.sc||'',sr:tr.dataset.sr||'',ph:tr.dataset.ph||'',pk:tr.dataset.pk||'',ser:serOf(tr,pos),had:tr.dataset.ser||''}}).filter(x=>x.v);
   if(by==='girth'&&isR(MODE)) l.sort((x,y)=>{const a=sortKey(x.v),b=sortKey(y.v); return (a[1]-b[1])||(a[0]-b[0])}); // girth, then length
   else l.sort((x,y)=>sortKey(x.v)[0]-sortKey(y.v)[0]); // first number only, rest keeps original order
-  rows.innerHTML=''; l.forEach(x=>{const tr=addRow(x.v); if(x.sc) tr.dataset.sc=x.sc; if(x.sr) tr.dataset.sr=x.sr; const k=(keepSer===true)?x.ser:(keepSer===false?'':x.had); if(k) tr.dataset.ser=k}); update();
+  rows.innerHTML=''; l.forEach(x=>{const tr=addRow(x.v); if(x.sc) tr.dataset.sc=x.sc; if(x.sr) tr.dataset.sr=x.sr; if(x.ph) tr.dataset.ph=x.ph; if(x.pk) tr.dataset.pk=x.pk; const k=(keepSer===true)?x.ser:(keepSer===false?'':x.had); if(k) tr.dataset.ser=k}); update();
 }
 async function sortAsk(by){
   const n=[...rows.querySelectorAll('tr')].filter(tr=>tr.querySelector('input.sz').value.trim()).length;
@@ -1993,7 +2021,7 @@ async function phSave(noCloud){
   try{
     if(!PHOTOS.length){ await PHDB.del(n); return }
     // store the small resized copy as plain text (safe in the Android WebView); the picked file itself can become unreadable later
-    const arr=PHOTOS.map(p=>({b64:p.b64||null,blob:p.b64?null:p.f,key:p.key,cs:p.cs||'',ci:!!p.ci,state:p.state==='reading'?'new':p.state,msg:p.msg||'',warn:!!p.warn}));
+    const arr=PHOTOS.map(p=>({b64:p.b64||null,blob:p.b64?null:p.f,key:p.key,cs:p.cs||'',ci:!!p.ci,state:p.state==='reading'?'new':p.state,msg:p.msg||'',warn:!!p.warn,snap:p.snap||null}));
     try{ await PHDB.put(n,arr) }
     catch(e){ arr.forEach(a=>{ if(a.b64) a.blob=null }); await PHDB.put(n,arr) }
   }catch(e){}
@@ -2006,7 +2034,7 @@ async function phRestore(n){
     let arr=n?(await PHDB.get(n)||[]):[];
     arr.forEach(a=>{
       const bl=a.b64?b64ToBlob(a.b64):a.blob; if(!bl) return;
-      const p={id:++phSeq,key:a.key||phNewKey(),cs:a.cs||'',ci:!!a.ci,f:bl,url:URL.createObjectURL(bl),state:(a.state==='done'||a.state==='error')?a.state:'new',msg:a.msg||'',warn:!!a.warn,b64:a.b64||null,mime:'image/jpeg'};
+      const p={id:++phSeq,key:a.key||phNewKey(),cs:a.cs||'',ci:!!a.ci,f:bl,url:URL.createObjectURL(bl),state:(a.state==='done'||a.state==='error')?a.state:'new',msg:a.msg||'',warn:!!a.warn,snap:a.snap||null,b64:a.b64||null,mime:'image/jpeg'};
       PHOTOS.push(p);
       if(!p.b64) shrinkToB64(bl,2200).then(d=>{p.b64=d;phSaveSoon()}).catch(()=>{});
     });
@@ -2019,13 +2047,13 @@ function addPhoto(f){
   const p={id:++phSeq,key:phNewKey(),cs:'',ci:false,f:f,url:URL.createObjectURL(f),state:'new',msg:'',b64:null,mime:'image/jpeg'};
   PHOTOS.push(p);
   // read the photo into memory right away (Android can revoke access to the picked file later)
-  shrinkToB64(f,2200).then(d=>{p.b64=d;p.mime='image/jpeg';phSaveSoon()}).catch(()=>toBase64(f).then(d=>{p.b64=d;p.mime=f.type||'image/jpeg';phSaveSoon()}).catch(()=>{}));
+  shrinkToB64(f,2200).then(d=>{p.b64=d;p.mime='image/jpeg';phSaveSoon();phHistAdd(p.key,d,getCurrent())}).catch(()=>toBase64(f).then(d=>{p.b64=d;p.mime=f.type||'image/jpeg';phSaveSoon()}).catch(()=>{}));
 }
 function renderPhotos(){
   phSaveSoon();
   const box=document.getElementById('photos');
-  if(!PHOTOS.length){box.innerHTML='';prev.hidden=true;return}
-  box.innerHTML='<div class="phhead"><b>'+PHOTOS.length+' photo'+(PHOTOS.length>1?'s':'')+'</b><button type="button" class="alt phx" id="ph-clear">Remove all</button></div>'+
+  if(!PHOTOS.length){box.innerHTML='<div class="phhead"><span></span><button type="button" class="alt phx" id="ph-hist">&#128193; History</button></div>';prev.hidden=true;return}
+  box.innerHTML='<div class="phhead"><b>'+PHOTOS.length+' photo'+(PHOTOS.length>1?'s':'')+'</b><span class="phb"><button type="button" class="alt phx" id="ph-hist">&#128193; History</button><button type="button" class="alt phx" id="ph-clear">Remove all</button></span></div>'+
     PHOTOS.map((p,i)=>{
       const cls=p.state==='error'?'err':(p.state==='done'?(p.warn?'warn':'ok'):''), txt=p.state==='new'?'Ready to read':(p.state==='reading'?('Reading... '+(p.pct||0)+'%'):p.msg);
       return '<div class="ph"><img src="'+p.url+'" alt="Photo '+(i+1)+'" data-view="'+p.id+'"><div class="phi"><div class="phn">Photo '+(i+1)+'</div><div class="phs '+cls+'">'+txt+'</div></div><button type="button" class="alt phd" data-del="'+p.id+'" aria-label="Remove photo">x</button></div>';
@@ -2042,12 +2070,133 @@ file.onchange=()=>{
     fc.onchange=()=>{[...fc.files].forEach(addPhoto); fc.value=''; renderPhotos();
       if(PHOTOS.length){const l=PHOTOS[PHOTOS.length-1]; prev.src=l.url; prev.hidden=false}}; }}
 document.getElementById('photos').addEventListener('click',e=>{
+  if(e.target.closest('#ph-hist')){histOpen();return}
   const v=e.target.closest('[data-view]'), d=e.target.closest('[data-del]'), c=e.target.closest('#ph-clear');
   if(v){const p=PHOTOS.find(x=>x.id==v.getAttribute('data-view')); if(p){prev.src=p.url;prev.hidden=false;prev.scrollIntoView({block:'nearest'})}}
   if((d||c)&&phBusy) return;
   if(d){const i=PHOTOS.findIndex(x=>x.id==d.getAttribute('data-del')); if(i>-1){URL.revokeObjectURL(PHOTOS[i].url);PHOTOS.splice(i,1);renderPhotos()}}
   if(c){PHOTOS.forEach(p=>{URL.revokeObjectURL(p.url)});PHOTOS.length=0;renderPhotos()}
 });
+
+// ---------- Photo history: every photo ever added, open / re-use / delete ----------
+const HP='\u0000h:', HMAX=80;
+function histTs(k){const t=parseInt(String(k||'').slice(1,9),36);return (t>1.5e12&&t<4e12)?t:Date.now()}
+PHDB.all=async function(){const d=await this.open();return new Promise((res,rej)=>{const out=[];const r=d.transaction('p','readonly').objectStore('p').openCursor();r.onsuccess=()=>{const c=r.result;if(c){out.push({k:c.key,v:c.value});c.continue()}else res(out)};r.onerror=()=>rej(r.error)})};
+function histThumb(b64){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const s=Math.min(1,320/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',0.7))}catch(e){res('data:image/jpeg;base64,'+b64)}};im.onerror=()=>res('');im.src='data:image/jpeg;base64,'+b64})}
+async function phHistAdd(key,b64,sheet,read){
+  try{ if(!key||!b64) return; const k=HP+key; if(await PHDB.get(k)) return;
+    const th=await histThumb(b64);
+    await PHDB.put(k,{key:key,ts:histTs(key),sheet:sheet||'',b64:b64,th:th,read:read||null});
+    const all=(await PHDB.all()).filter(x=>typeof x.k==='string'&&x.k.indexOf(HP)===0).sort((a,b)=>(b.v.ts||0)-(a.v.ts||0));
+    for(const x of all.slice(HMAX)) await PHDB.del(x.k);
+  }catch(e){}
+}
+async function phHistMark(p){   // remember that this photo was read, and what it gave
+  try{ if(!p||!p.key||!p.b64) return;
+    const rd=Object.assign({done:true,ts:Date.now()},p.snap||{msg:p.msg,warn:!!p.warn});
+    const k=HP+p.key, rec=await PHDB.get(k);
+    if(rec){ rec.read=rd; await PHDB.put(k,rec) } else { await phHistAdd(p.key,p.b64,getCurrent(),rd) }
+  }catch(e){}
+}
+function histReadOf(a){return a&&a.state==='done'?Object.assign({done:true},a.snap||{msg:a.msg,warn:!!a.warn}):null}
+async function phHistSync(){   // photos saved earlier under sheet names are added to the history too
+  try{ const all=await PHDB.all(); const have=new Set(all.filter(x=>typeof x.k==='string'&&x.k.indexOf(HP)===0).map(x=>x.v.key));
+    const recs={}; all.forEach(x=>{ if(typeof x.k==='string'&&x.k.indexOf(HP)===0) recs[x.v.key]=x });
+    for(const x of all){ if(typeof x.k!=='string'||x.k.indexOf(HP)===0||!Array.isArray(x.v)) continue;
+      for(const a of x.v){ if(!a||!a.key) continue;
+        if(have.has(a.key)){ const r=recs[a.key]; if(r&&!r.v.read&&a.state==='done'){ r.v.read=histReadOf(a); await PHDB.put(r.k,r.v) } continue }
+        let b=a.b64; if(!b&&a.blob){ try{b=await shrinkToB64(a.blob,2200)}catch(e){} }
+        if(b){ await phHistAdd(a.key,b,x.k==='__work__'?'':x.k,histReadOf(a)); have.add(a.key) } } }
+  }catch(e){}
+}
+let HCUR=null; const HSNAP={};
+async function histSnapNow(){   // the saved copy of a read photo always follows what is in the sheet now (corrections, green ticks, deleted rows)
+  if(typeof phReady!=='undefined'&&!phReady) return;
+  const by={};
+  rows.querySelectorAll('tr[data-pk]').forEach(tr=>{ const v=tr.querySelector('input').value.trim(); if(!v) return; (by[tr.dataset.pk]=by[tr.dataset.pk]||[]).push({v:v,sc:tr.dataset.sc||'',sr:tr.dataset.sr||''}) });
+  for(const key of Object.keys(by)){
+    const js=JSON.stringify(by[key]); if(HSNAP[key]===js) continue;
+    const pp=PHOTOS.find(p=>p.key===key); if(pp&&pp.snap&&pp.snap.mode!=='fix') pp.snap.rows=by[key];
+    const rec=await PHDB.get(HP+key);
+    if(rec&&rec.read&&rec.read.mode!=='fix'){ rec.read.rows=by[key]; rec.read.edited=Date.now(); await PHDB.put(HP+key,rec) }
+    HSNAP[key]=js;
+  }
+}
+function histFmt(ts){const d=new Date(ts);let h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0'),ap=h>=12?'pm':'am';h=h%12||12;return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear()+'  '+h+':'+m+' '+ap}
+async function histOpen(){
+  try{ await histSnapNow() }catch(e){}
+  const ov=document.getElementById('phh'), g=document.getElementById('phh-g'); ov.hidden=false;
+  g.innerHTML='<div class="he">Loading...</div>';
+  await phHistSync();
+  let list=[]; try{list=(await PHDB.all()).filter(x=>typeof x.k==='string'&&x.k.indexOf(HP)===0).map(x=>x.v)}catch(e){}
+  list.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  document.getElementById('phh-t').textContent='Photo history ('+list.length+')';
+  document.getElementById('phh-clear').style.display=list.length?'':'none';
+  if(!list.length){g.innerHTML='<div class="he">No photos yet. Photos you add are kept here until you delete them.</div>';return}
+  g.innerHTML=''; list.forEach(h=>{
+    const c=document.createElement('div'); c.className='hc';
+    c.innerHTML='<img alt="" src="'+(h.th||('data:image/jpeg;base64,'+h.b64))+'"><div><b>'+esc(histFmt(h.ts))+'</b><small>'+(h.sheet?esc(h.sheet):'Unsaved sheet')+'</small><small style="font-weight:700;color:'+(h.read?'#1f6b3a':'#8a4b00')+'">'+(h.read?'&#10003; Read'+(h.read.rows?' \u00b7 '+h.read.rows.length+' sizes':''):'Not read yet')+'</small></div>';
+    c.onclick=()=>histView(h); g.appendChild(c)});
+}
+function histView(h){
+  HCUR=h; const v=document.getElementById('phv'), im=document.getElementById('phv-img'), box=document.getElementById('phv-i');
+  box.classList.remove('z'); im.src='data:image/jpeg;base64,'+h.b64;
+  document.getElementById('phv-t').textContent=histFmt(h.ts)+(h.sheet?'  ·  '+h.sheet:''); v.hidden=false;
+}
+function histBack(){document.getElementById('phv').hidden=true; HCUR=null; const c=document.getElementById('phv-ch'); if(c){c.hidden=true;c.innerHTML=''}}
+function histClose(){histBack(); document.getElementById('phh').hidden=true}
+document.getElementById('phh-close').onclick=histClose;
+document.getElementById('phv-back').onclick=histBack;
+document.getElementById('phv-zoom').onclick=()=>{const b=document.getElementById('phv-i');b.classList.toggle('z')};
+document.getElementById('phv-img').onclick=()=>document.getElementById('phv-i').classList.toggle('z');
+function histAdd(h,state,msg,warn,snap){
+  const f=b64ToBlob(h.b64); addPhoto(f); const p=PHOTOS[PHOTOS.length-1]; p.key=h.key; p.b64=h.b64;
+  if(state==='done'){p.state='done';p.msg=msg||'Already read';p.warn=!!warn;p.snap=snap||null}
+  renderPhotos(); prev.src=p.url; prev.hidden=false; histClose();
+  try{document.getElementById('photos').scrollIntoView({block:'start'})}catch(e){}
+}
+function histRestoreRows(h){   // puts the saved sizes of this photo back into the sheet (never reads it again)
+  const rd=h.read; let n=0;
+  if(rd.mode==='fix'&&rd.fxraw){ try{const fr=fxAddRead(rd.fxraw); n=fr.n||0}catch(e){} }
+  else if(rd.rows){
+    [...rows.querySelectorAll('tr')].forEach(tr=>{ if(!tr.querySelector('input').value.trim()) tr.remove() });
+    rd.rows.forEach(r=>{const tr=addRow(esc(String(r.v))); if(r.sc) tr.dataset.sc=r.sc; if(r.sr) tr.dataset.sr=r.sr; tr.dataset.pk=h.key; n++});
+  }
+  try{update()}catch(e){}
+  return n;
+}
+document.getElementById('phv-use').onclick=()=>{
+  const h=HCUR; if(!h) return;
+  if(PHOTOS.some(p=>p.key===h.key)){histClose();return}
+  const rd=h.read;
+  if(!rd){ histAdd(h); return }      // never read: fresh read later
+  const ch=document.getElementById('phv-ch'), inSheet=!!rows.querySelector('tr[data-pk="'+h.key+'"]');
+  const hasData=!!(rd.rows||rd.fxraw), modeOk=!rd.mode||rd.mode===MODE;
+  let html='<b>This photo was already read'+(rd.rows?' ('+rd.rows.length+' sizes)':'')+'.</b> It will not be read again, so no photo reading is used.<br>';
+  if(hasData&&modeOk&&!inSheet) html+='Put its sizes back into this sheet?<button type="button" id="chr">Restore sizes and add photo</button><button type="button" class="g" id="cho">Add photo only (sizes are already in my sheet)</button>';
+  else if(inSheet) html+='Its sizes are already in this sheet.<button type="button" id="cho">Add photo</button>';
+  else if(hasData&&!modeOk) html+='It was read in another type, so its sizes cannot be restored in this one.<button type="button" id="cho">Add photo only</button>';
+  else html+='Its sizes stay in the sheet where they were read.<button type="button" id="cho">Add photo</button>';
+  html+='<button type="button" class="g" id="chx">Cancel</button>';
+  ch.innerHTML=html; ch.hidden=false;
+  const done=()=>{ch.hidden=true;ch.innerHTML=''};
+  const mk=(restore)=>()=>{ if(restore){histRestoreRows(h)} done(); histAdd(h,'done',(rd.msg||'Already read')+' <b>· from history, not read again</b>',rd.warn,rd) };
+  const r1=document.getElementById('chr'); if(r1) r1.onclick=mk(true);
+  document.getElementById('cho').onclick=mk(false);
+  document.getElementById('chx').onclick=done;
+};
+document.getElementById('phv-del').onclick=async()=>{
+  const h=HCUR; if(!h) return;
+  if(!(await askConfirm('Delete this photo from the history? It cannot be recovered.\nSizes already read into your sheets are NOT deleted.','Delete'))) return;
+  try{await PHDB.del(HP+h.key)}catch(e){}
+  histBack(); histOpen();
+};
+document.getElementById('phh-clear').onclick=async()=>{
+  if(!(await askConfirm('Delete ALL photos from the history? Photos in the sheet list stay.\nSizes already read into your sheets are NOT deleted.','Delete all'))) return;
+  try{const all=await PHDB.all(); for(const x of all) if(typeof x.k==='string'&&x.k.indexOf(HP)===0) await PHDB.del(x.k)}catch(e){}
+  histOpen();
+};
+
 // Shrink big phone photos (max 2200 px, JPEG) so the upload is small and reliable
 function shrinkToB64(f,maxSide){
   return new Promise((res,rej)=>{
@@ -2252,7 +2401,7 @@ document.getElementById('go').onclick=async()=>{
       try{ if(window.__countApiUse) window.__countApiUse() }catch(e){}   // usage count shown to the developer in the key generator
       txt=txt.replace(/<think>[\s\S]*?<\/think>/gi,'').replace(/```json|```/g,'').trim();
       { const a=txt.indexOf('['), b=txt.lastIndexOf(']'); if(a>-1&&b>a) txt=txt.slice(a,b+1); }
-      if(MODE==='fix'){ const fr=fxAddRead(JSON.parse(txt)); p.state='done'; p.warn=fr.warn; p.msg=fr.msg; lines.push('Photo '+no+': '+fr.msg); renderPhotos(); continue; }
+      if(MODE==='fix'){ const jr=JSON.parse(txt); const fr=fxAddRead(jr); p.state='done'; p.warn=fr.warn; p.msg=fr.msg; p.snap={mode:'fix',fxraw:jr,msg:fr.msg,warn:!!fr.warn}; phHistMark(p); lines.push('Photo '+no+': '+fr.msg); renderPhotos(); continue; }
       const res=normAi(JSON.parse(txt));
       const trs=appendRows(res,no), rp=sheetReport(trs);
       allSum.s+=rp.sSum; allSum.c+=rp.cSum;
@@ -2265,6 +2414,7 @@ document.getElementById('go').onclick=async()=>{
       if(res.arr.length<100) m+=' · fewer than 100 rows';
       m+=modeHint(res.arr);
       p.state='done'; p.warn=rp.bad.length>0||res.missing.length>0||unver; p.msg=m;
+      trs.forEach(t=>{t.dataset.pk=p.key}); p.snap={mode:MODE,rows:trs.map(t=>({v:t.querySelector('input').value,sc:t.dataset.sc||'',sr:t.dataset.sr||''})),msg:m,warn:!!p.warn}; phHistMark(p);
       lines.push('Photo '+no+': '+m);
     }catch(e){
       const em=(e&&e.message)||''; const net=/failed to fetch|networkerror|load failed/i.test(em);
@@ -2398,7 +2548,8 @@ function uniqueName(base){
   const f=readFiles(); if(!f[base]) return base;
   let i=2; while(f[base+' ('+i+')']) i++; return base+' ('+i+')';
 }
-function scheduleAutoSave(){ clearTimeout(autoT); autoT=setTimeout(autoSaveNow,700); }
+let hsT=null; function histSnapSoon(){ clearTimeout(hsT); hsT=setTimeout(()=>{try{histSnapNow()}catch(e){}},1500) }
+function scheduleAutoSave(){ try{histSnapSoon()}catch(e){}  clearTimeout(autoT); autoT=setTimeout(autoSaveNow,700); }
 function autoSaveNow(){
   if(MODE==='fix'){ fxAutoSave(); return; }
   const list=currentRows().map(normalize), meta=rowMetaList();
