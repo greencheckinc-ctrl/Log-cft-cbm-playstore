@@ -1989,12 +1989,13 @@ function b64ToBlob(b){const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0
 function phSaveSoon(){ clearTimeout(phT); phT=setTimeout(()=>{phSave()},1200) }
 async function phSave(noCloud){
   clearTimeout(phT);
-  const n=getCurrent(); if(!n||!phReady) return;
+  const n=getCurrent()||'__work__'; if(!phReady) return;
   try{
     if(!PHOTOS.length){ await PHDB.del(n); return }
-    const arr=PHOTOS.map(p=>({blob:p.f,key:p.key,cs:p.cs||'',ci:!!p.ci,state:p.state==='reading'?'new':p.state,msg:p.msg||'',warn:!!p.warn}));
+    // store the small resized copy as plain text (safe in the Android WebView); the picked file itself can become unreadable later
+    const arr=PHOTOS.map(p=>({b64:p.b64||null,blob:p.b64?null:p.f,key:p.key,cs:p.cs||'',ci:!!p.ci,state:p.state==='reading'?'new':p.state,msg:p.msg||'',warn:!!p.warn}));
     try{ await PHDB.put(n,arr) }
-    catch(e){ arr.forEach((a,i)=>{ if(PHOTOS[i].b64) a.blob=b64ToBlob(PHOTOS[i].b64) }); await PHDB.put(n,arr) }
+    catch(e){ arr.forEach(a=>{ if(a.b64) a.blob=null }); await PHDB.put(n,arr) }
   }catch(e){}
 }
 function phClear(){ PHOTOS.forEach(p=>{try{URL.revokeObjectURL(p.url)}catch(e){}}); PHOTOS.length=0; renderPhotos() }
@@ -2004,9 +2005,10 @@ async function phRestore(n){
   try{
     let arr=n?(await PHDB.get(n)||[]):[];
     arr.forEach(a=>{
-      const p={id:++phSeq,key:a.key||phNewKey(),cs:a.cs||'',ci:!!a.ci,f:a.blob,url:URL.createObjectURL(a.blob),state:(a.state==='done'||a.state==='error')?a.state:'new',msg:a.msg||'',warn:!!a.warn,b64:null,mime:'image/jpeg'};
+      const bl=a.b64?b64ToBlob(a.b64):a.blob; if(!bl) return;
+      const p={id:++phSeq,key:a.key||phNewKey(),cs:a.cs||'',ci:!!a.ci,f:bl,url:URL.createObjectURL(bl),state:(a.state==='done'||a.state==='error')?a.state:'new',msg:a.msg||'',warn:!!a.warn,b64:a.b64||null,mime:'image/jpeg'};
       PHOTOS.push(p);
-      shrinkToB64(a.blob,2200).then(d=>{p.b64=d}).catch(()=>{});
+      if(!p.b64) shrinkToB64(bl,2200).then(d=>{p.b64=d;phSaveSoon()}).catch(()=>{});
     });
   }catch(e){}
   renderPhotos(); phReady=true;
@@ -2017,7 +2019,7 @@ function addPhoto(f){
   const p={id:++phSeq,key:phNewKey(),cs:'',ci:false,f:f,url:URL.createObjectURL(f),state:'new',msg:'',b64:null,mime:'image/jpeg'};
   PHOTOS.push(p);
   // read the photo into memory right away (Android can revoke access to the picked file later)
-  shrinkToB64(f,2200).then(d=>{p.b64=d;p.mime='image/jpeg'}).catch(()=>toBase64(f).then(d=>{p.b64=d;p.mime=f.type||'image/jpeg'}).catch(()=>{}));
+  shrinkToB64(f,2200).then(d=>{p.b64=d;p.mime='image/jpeg';phSaveSoon()}).catch(()=>toBase64(f).then(d=>{p.b64=d;p.mime=f.type||'image/jpeg';phSaveSoon()}).catch(()=>{}));
 }
 function renderPhotos(){
   phSaveSoon();
@@ -3087,7 +3089,9 @@ fname.value=getCurrent()||today();
 renderFiles();
 load();
 if(!rows.children.length) addRow();
-phRestore(getCurrent());
+phRestore(getCurrent()||'__work__');
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden') phSave()});
+window.addEventListener('pagehide',()=>{phSave()});
 // Back button: close an open dialog first; otherwise ask to press back again instead of closing the app at once
 (function(){
   let last=0, armed=false;
