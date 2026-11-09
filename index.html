@@ -1182,7 +1182,7 @@ const rows = document.getElementById('rows');
 function kpOn(){try{return localStorage.getItem('logcft_kp_v1')!=='sys'}catch(e){return true}}
 // Free plan (Android app): 50 new entries per day in total (all sheets), then a popup about Premium. Premium or an active AI pack has no limit. Merge & sort is Premium only.
 const FREE_MAX=50, DAYKEY='logcft_daily_v1';
-function freeLimited(){ try{ return !!(window.NATIVE&&window.LogAds&&!LogAds.isPremium()&&!(LogAds.isAiActive&&LogAds.isAiActive())) }catch(e){return false} }
+function freeLimited(){ try{ return !!(window.NATIVE&&window.LogAds&&!LogAds.isPremium()) }catch(e){return false} }   // AI packs do not remove the free 50-entries/day limit; only Premium does
 function dailyUsed(){ try{ const v=JSON.parse(localStorage.getItem(DAYKEY)||'null'); return (v&&v.d===today())?(+v.n||0):0 }catch(e){return 0} }
 function dailyAdd(k){ try{ localStorage.setItem(DAYKEY,JSON.stringify({d:today(),n:Math.max(0,dailyUsed()+k)})) }catch(e){} freeLeftLabel() }
 function freeLeftLabel(){ const e=document.getElementById('free-left'); if(!e) return; if(!freeLimited()){e.hidden=true;return} e.hidden=false; e.textContent='Free plan: '+Math.max(0,FREE_MAX-dailyUsed())+' of '+FREE_MAX+' entries left today' }
@@ -2379,6 +2379,11 @@ document.getElementById('go').onclick=async()=>{
   if(!PHOTOS.length){st.innerHTML='<span class="err">Please choose a photo first.</span>';return}
   const todo=PHOTOS.filter(p=>p.state!=='done');
   if(!todo.length){st.innerHTML='All photos are already read. Add more photos to read them too.';return}
+  if(freeLimited()){   // free plan: do not spend an AI image on rows that cannot be added
+    const room=Math.max(0,FREE_MAX-dailyUsed());
+    if(room<=0){ showLimit(); return }
+    if(room<100 && !(await askConfirm('Free plan: only '+room+' of '+FREE_MAX+' entries are left today.\n\nA sheet photo can have up to 100 sizes. Sizes above '+room+' will NOT be added, but the photo is still counted from your AI images.\n\nPremium removes this limit. Read anyway?','Read anyway'))) return;
+  }
   st.textContent='Checking...'; if(window.__syncApiKey) await window.__syncApiKey();
   if(!curKey()&&!WORKER_URL){st.innerHTML='<span class="err">Photo reading is not enabled for this device. Please contact the developer.</span>';return}
   phBusy=true; const lines=[]; let allSum={s:0,c:0};
