@@ -3952,6 +3952,7 @@ setTimeout(go,1800);})();
     try{localStorage.setItem(EMAILKEY,em)}catch(e){}
     $('lg-pass').value='';$('lg-pass2').value='';
     root.classList.remove('needlogin');
+    try{ document.dispatchEvent(new Event('visibilitychange')) }catch(e){}   // send the email to the keygen at once
     try{ if(window.__syncApiKey) window.__syncApiKey() }catch(e){}
     try{ if(window.LogBilling) LogBilling.syncOwned().then(function(){ if(window.LogAds) LogAds.refresh() }) }catch(e){}   // new phone: bring back what this account bought
   }
