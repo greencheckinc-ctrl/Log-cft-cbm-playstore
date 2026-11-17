@@ -613,6 +613,7 @@ html.locked body{overflow:hidden}
     <button type="button" id="m-set" aria-haspopup="true" aria-expanded="false">Settings</button>
     <div class="dd" id="dd-set" role="menu">
       <button type="button" role="menuitem" id="mi-plans">Plans &amp; AI Packs...</button>
+      <button type="button" role="menuitem" id="mi-guide">User guide</button>
       <button type="button" role="menuitem" id="mi-about">App info...</button>
       <hr>
       <button type="button" role="menuitem" id="mi-theme">Theme colour...</button>
@@ -3237,6 +3238,13 @@ function requireActive(){ return !BLOCKED }
 try{freeLeftLabel(); setTimeout(freeLeftLabel,1500); setTimeout(freeLeftLabel,6000)}catch(e){}
 document.addEventListener('visibilitychange',()=>{try{freeLeftLabel()}catch(e){}});
 document.getElementById('mi-plans').onclick=()=>{closeMenus();location.href='plans.html'};
+document.getElementById('mi-guide').onclick=()=>{
+  closeMenus();
+  // In the Play Store app the guide opens from the website (keeps the app small); in the browser it opens from the same folder.
+  const u=window.NATIVE?'https://greencheckinc-ctrl.github.io/Log-cft-cbm-playstore/Log-CFT-CBM-User-Guide-Flipbook.html':'Log-CFT-CBM-User-Guide-Flipbook.html';
+  let w=null; try{ w=window.open(u,'_blank') }catch(e){}
+  if(!w) location.href=u;
+};
 document.getElementById('mi-about').onclick=()=>{closeMenus();refreshAct();document.getElementById('dlg-about').showModal()};
 refreshAct();
 (function(){
@@ -3940,11 +3948,12 @@ setTimeout(go,1800);})();
   }
   function done(j,prov){
     var em=String(j.email||$('lg-email').value).trim().toLowerCase();
-    try{localStorage.setItem(KEY,JSON.stringify({email:em,uid:j.localId||'',provider:prov||'password'}))}catch(e){}
+    try{localStorage.setItem(KEY,JSON.stringify({email:em,uid:j.localId||'',provider:prov||'password',rt:j.refreshToken||''}))}catch(e){}
     try{localStorage.setItem(EMAILKEY,em)}catch(e){}
     $('lg-pass').value='';$('lg-pass2').value='';
     root.classList.remove('needlogin');
     try{ if(window.__syncApiKey) window.__syncApiKey() }catch(e){}
+    try{ if(window.LogBilling) LogBilling.syncOwned().then(function(){ if(window.LogAds) LogAds.refresh() }) }catch(e){}   // new phone: bring back what this account bought
   }
   async function go(){
     if(busy) return;
